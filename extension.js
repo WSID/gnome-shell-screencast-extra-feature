@@ -16,13 +16,43 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
+import St from 'gi://St';
+
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
-import {Main} from 'resource:///org/gnome/shell/ui/main.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 export default class ScreencastWithAudio extends Extension {
     enable() {
+        // Reference from Main UI
+        this._screenshotUI = Main.screenshotUI;
+        this._showPointerButtonContainer = this._screenshotUI._showPointerButtonContainer;
+        this._showPointerButton = this._screenshotUI._showPointerButton;
+
+        // Created widgets
+        this._desktopAudioButton = new St.Button({
+          style_class: 'screenshot-ui-show-pointer-button',
+          icon_name: 'audio-speakers-symbolic',
+          toggle_mode: true,
+        });
+        this._micAudioButton = new St.Button({
+          style_class: 'screenshot-ui-show-pointer-button',
+          icon_name: 'audio-input-microphone-symbolic',
+          toggle_mode: true,
+        });
+
+        // Add widgets
+        this._showPointerButtonContainer.insert_child_below(
+          this._desktopAudioButton,
+          this._showPointerButton
+        );
+        this._showPointerButtonContainer.insert_child_below(
+          this._micAudioButton,
+          this._showPointerButton
+        );
     }
 
     disable() {
+        this._showPointerButtonContainer.remove_child(this._desktopAudioButton);
+        this._showPointerButtonContainer.remove_child(this._micAudioButton);
     }
 }
