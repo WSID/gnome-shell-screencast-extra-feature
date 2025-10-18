@@ -1,0 +1,8 @@
+{
+  "name": "Screencast with Audio",
+  "description": "Include Audio in Screen Cast",
+  "uuid": "screencast.with.audio@wissle.me",
+  "shell-version": [
+    "49"
+  ]
+}
