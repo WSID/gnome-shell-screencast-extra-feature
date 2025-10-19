@@ -41,11 +41,11 @@ export default class ScreencastWithAudio extends Extension {
         });
 
         // Add widgets
-        this._showPointerButtonContainer.insert_child_below(
+        this._showPointerButtonContainer.insert_child_above(
           this._desktopAudioButton,
           this._showPointerButton
         );
-        this._showPointerButtonContainer.insert_child_below(
+        this._showPointerButtonContainer.insert_child_above(
           this._micAudioButton,
           this._showPointerButton
         );
