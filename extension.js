@@ -28,6 +28,7 @@ export default class ScreencastWithAudio extends Extension {
         this._showPointerButtonContainer = this._screenshotUI._showPointerButtonContainer;
         this._showPointerButton = this._screenshotUI._showPointerButton;
         this._shotButton = this._screenshotUI._shotButton;
+        this._screencastProxy = this._screenshotUI._screencastProxy;
 
         // Created widgets
         this._desktopAudioButton = new St.Button({
@@ -61,11 +62,41 @@ export default class ScreencastWithAudio extends Extension {
             this._micAudioButton.visible = ! this._shotButton.checked
           }
         );
+        // Monkey patch
+        this._origProxyScreencast = this._screencastProxy.ScreencastAsync;
+        this._origProxyScreencastArea = this._screencastProxy.ScreencastAreaAsync;
+
+        this._screencastProxy.ScreencastAsync = this._screencastAsync.bind(this);
+        this._screencastProxy.ScreencastAreaAsync = this._screencastAreaAsync.bind(this);
     }
 
     disable() {
         this._shotButton.disconnect(this._shotButtonNotifyChecked);
         this._showPointerButtonContainer.remove_child(this._desktopAudioButton);
         this._showPointerButtonContainer.remove_child(this._micAudioButton);
+
+        // Revert Monkey patch
+        this._screencastProxy.ScreencastAsync = this._origProxyScreencast;
+        this._screencastProxy.ScreencastAreaAsync = this._origProxyScreencastArea;
+    }
+
+    // Privates
+
+    async _screencastAsync(filename, options) {
+        try {
+            return this._origProxyScreencast.call(this._screencastProxy, filename, options);
+        } catch (e) {
+            print(e);
+            throw e;
+        }
+    }
+
+    async _screencastAreaAsync(x, y, w, h, filename, options) {
+        try {
+            return await this._origProxyScreencastArea.call(this._screencastProxy, x, y, w, h, filename, options);
+        } catch (e) {
+            console.warn(e);
+            throw e;
+        }
     }
 }
