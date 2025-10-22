@@ -157,7 +157,9 @@ export default class ScreencastWithAudio extends Extension {
         console.log(`Fix file path: ${filepath}`);
 
         let hasDesktopAudio = this._desktopAudioButton.checked;
-        if (hasDesktopAudio) {
+        let hasMicAudio = this._micAudioButton.checked;
+
+        if (hasDesktopAudio || hasMicAudio) {
             // Split extension from file name
             let lastPoint = filepath.lastIndexOf('.')
             if (lastPoint !== -1) {
@@ -177,7 +179,12 @@ export default class ScreencastWithAudio extends Extension {
 
     _makePipelineString(video, audio, mux) {
         let hasDesktopAudio = this._desktopAudioButton.checked;
-        if (hasDesktopAudio) {
+        let hasMicAudio = this._micAudioButton.checked;
+
+        var audioSource = null
+        if (hasDesktopAudio && hasMicAudio) {
+            // TODO: Mix them
+        } else if (hasDesktopAudio) {
             let sink = this._mixerControl.get_default_sink();
             let sinkName = sink.name;
             let sinkChannelMap = sink.channel_map;
@@ -190,8 +197,23 @@ export default class ScreencastWithAudio extends Extension {
                 `capsfilter caps=audio/x-raw,channels=${sinkChannels}`
             ];
 
-            let audioSource = audioSourceComp.join(" ! ");
+            audioSource = audioSourceComp.join(" ! ");
+        } else if (hasMicAudio) {
+            let src = this._mixerControl.get_default_source();
+            let srcName = src.name;
+            let srcChannelMap = src.channel_map;
+            let srcChannels = srcChannelMap.get_num_channels();
+            let audioSourceComp = [
+                `pulsesrc device=${srcName}`,
+                // Need to specify channels, so that right channels are applied.
+                `capsfilter caps=audio/x-raw,channels=${srcChannels}`
+            ];
 
+            audioSource = audioSourceComp.join(" ! ");
+        }
+
+
+        if (audioSource !== null) {
             // Put 3 segments as pipeline description string.
             //
             // As screen cast service will prepend and append video source and
