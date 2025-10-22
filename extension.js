@@ -178,10 +178,19 @@ export default class ScreencastWithAudio extends Extension {
     _makePipelineString(video, audio, mux) {
         let hasDesktopAudio = this._desktopAudioButton.checked;
         if (hasDesktopAudio) {
-            let sinkDevice = this._mixerControl.get_default_sink();
-            let sinkName = sinkDevice.get_name();
+            let sink = this._mixerControl.get_default_sink();
+            let sinkName = sink.name;
+            let sinkChannelMap = sink.channel_map;
+            let sinkChannels = sinkChannelMap.get_num_channels();
             let monitorName = sinkName + ".monitor";
-            let audioSource = `pulsesrc device=${monitorName}`;
+            let audioSourceComp = [
+                `pulsesrc device=${monitorName}`,
+
+                // Need to specify channels, so that right channels are applied.
+                `capsfilter caps=audio/x-raw,channels=${sinkChannels}`
+            ];
+
+            let audioSource = audioSourceComp.join(" ! ");
 
             // Put 3 segments as pipeline description string.
             //
