@@ -38,8 +38,6 @@ const VIDEO_COMPONENT = [
 const VIDEO_PIPELINE = VIDEO_COMPONENT.join(' ! ');
 
 const AUDIO_COMPONENT = [
-  'audioconvert',
-  'queue',
   'vorbisenc',
   'queue'
 ];
@@ -178,38 +176,53 @@ export default class ScreencastWithAudio extends Extension {
     }
 
     _makePipelineString(video, audio, mux) {
-        let hasDesktopAudio = this._desktopAudioButton.checked;
-        let hasMicAudio = this._micAudioButton.checked;
-
-        var audioSource = null
-        if (hasDesktopAudio && hasMicAudio) {
-            // TODO: Mix them
-        } else if (hasDesktopAudio) {
+        var desktopAudioSource = null;
+        var desktopAudioChannels = 0;
+        if (this._desktopAudioButton.checked) {
             let sink = this._mixerControl.get_default_sink();
             let sinkName = sink.name;
             let sinkChannelMap = sink.channel_map;
-            let sinkChannels = sinkChannelMap.get_num_channels();
+            desktopAudioChannels = sinkChannelMap.get_num_channels();
+
             let monitorName = sinkName + ".monitor";
             let audioSourceComp = [
-                `pulsesrc device=${monitorName}`,
+                `pulsesrc device=${monitorName} provide-clock=false`,
 
                 // Need to specify channels, so that right channels are applied.
-                `capsfilter caps=audio/x-raw,channels=${sinkChannels}`
+                `capsfilter caps=audio/x-raw,channels=${desktopAudioChannels}`
             ];
+            desktopAudioSource = audioSourceComp.join(" ! ");
+        }
 
-            audioSource = audioSourceComp.join(" ! ");
-        } else if (hasMicAudio) {
+        var micAudioSource = null;
+        if (this._micAudioButton.checked) {
             let src = this._mixerControl.get_default_source();
             let srcName = src.name;
             let srcChannelMap = src.channel_map;
             let srcChannels = srcChannelMap.get_num_channels();
             let audioSourceComp = [
-                `pulsesrc device=${srcName}`,
+                `pulsesrc device=${srcName} provide-clock=false`,
+
                 // Need to specify channels, so that right channels are applied.
                 `capsfilter caps=audio/x-raw,channels=${srcChannels}`
             ];
 
-            audioSource = audioSourceComp.join(" ! ");
+            micAudioSource = audioSourceComp.join(" ! ");
+        }
+
+        var audioSource = null;
+        if (desktopAudioSource !== null && micAudioSource !== null) {
+            let segments = [
+                `${desktopAudioSource} ! audiomixer name=am latency=100000000`,
+                `${micAudioSource} ! am.`,
+                `am. ! capsfilter caps=audio/x-raw,channels=${desktopAudioChannels}`
+            ];
+
+            audioSource = segments.join(" ");
+        } else if (desktopAudioSource !== null) {
+            audioSource = desktopAudioSource;
+        } else if (micAudioSource !== null) {
+            audioSource = micAudioSource;
         }
 
 
