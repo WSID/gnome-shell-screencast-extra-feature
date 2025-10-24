@@ -22,6 +22,7 @@ import GLib from 'gi://GLib';
 
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as Screenshot from 'resource:///org/gnome/shell/ui/screenshot.js';
 
 // Some Constants
 
@@ -134,6 +135,24 @@ export default class ScreencastWithAudio extends Extension {
           visible: ! this._shotButton.checked
         });
 
+        this._desktopAudioTooltip = new Screenshot.Tooltip(
+          this._desktopAudioButton,
+          {
+            text: 'Record Desktop Audio',
+            style_class: 'screenshot-ui-tooltip',
+            visible: false
+          }
+        );
+
+        this._micAudioTooltip = new Screenshot.Tooltip(
+          this._micAudioButton,
+          {
+            text: 'Record Mic Audio',
+            style_class: 'screenshot-ui-tooltip',
+            visible: false
+          }
+        );
+
         // Add widgets
         this._showPointerButtonContainer.insert_child_at_index(
           this._desktopAudioButton,
@@ -143,6 +162,9 @@ export default class ScreencastWithAudio extends Extension {
           this._micAudioButton,
           1
         );
+
+        this._screenshotUI.add_child(this._desktopAudioTooltip);
+        this._screenshotUI.add_child(this._micAudioTooltip);
 
         // connect to signals.
         this._shotButtonNotifyChecked = this._shotButton.connect (
@@ -157,6 +179,23 @@ export default class ScreencastWithAudio extends Extension {
         this._mixerControl = new Gvc.MixerControl({name: "Extension Screencast with Audio"});
         this._mixerControl.open();
 
+        this._mixerSinkChanged = this._mixerControl.connect(
+          'default-sink-changed',
+          (_object, _id) => {
+            this._onSinkChanged();
+          }
+        );
+
+        this._mixerSrcChanged = this._mixerControl.connect(
+          'default-source-changed',
+          (_object, _id) => {
+            this._onSrcChanged();
+          }
+        );
+
+        this._onSinkChanged();
+        this._onSrcChanged();
+
         // Monkey patch
         this._origProxyScreencast = this._screencastProxy.ScreencastAsync;
         this._origProxyScreencastArea = this._screencastProxy.ScreencastAreaAsync;
@@ -167,6 +206,8 @@ export default class ScreencastWithAudio extends Extension {
 
     disable() {
         this._shotButton.disconnect(this._shotButtonNotifyChecked);
+        this._screenshotUI.remove_child(this._desktopAudioTooltip);
+        this._screenshotUI.remove_child(this._micAudioTooltip);
         this._showPointerButtonContainer.remove_child(this._desktopAudioButton);
         this._showPointerButtonContainer.remove_child(this._micAudioButton);
 
@@ -174,6 +215,8 @@ export default class ScreencastWithAudio extends Extension {
         this._screencastProxy.ScreencastAsync = this._origProxyScreencast;
         this._screencastProxy.ScreencastAreaAsync = this._origProxyScreencastArea;
 
+        this._mixerControl.disconnect(this._mixerSrcChanged);
+        this._mixerControl.disconnect(this._mixerSinkChanged);
         this._mixerControl.close();
     }
 
@@ -343,5 +386,17 @@ export default class ScreencastWithAudio extends Extension {
         } else {
             return null;
         }
+    }
+
+    _onSinkChanged() {
+        let sink = this._mixerControl.get_default_sink();
+        let sinkPort = sink.get_port();
+        this._desktopAudioTooltip.text = `Record Desktop Audio\n${sinkPort.human_port}: ${sink.description}`;
+    }
+
+    _onSrcChanged() {
+        let src = this._mixerControl.get_default_source();
+        let srcPort = src.get_port();
+        this._micAudioTooltip.text = `Record Mic Audio\n${srcPort.human_port}: ${src.description}`;
     }
 }
