@@ -28,29 +28,91 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 // Copied from Gnome Shell Screencast Service. This is probably in separated process, so I cannot monkey-patch on it.
 
 
-const VIDEO_COMPONENT = [
-  'videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T',
-  'queue',
-  'vp8enc cpu-used=16 max-quantizer=17 deadline=1 keyframe-mode=disabled threads=%T static-threshold=1000 buffer-size=20000',
-  'queue'
+const VORBIS_PIPELINE = "vorbisenc ! queue";
+const AAC_PIPELINE = "avenc_aac ! queue"
+
+const configures = [
+  {
+    id: "hwenc-dmabuf-h264-vaapi-lp",
+    videoPipeline: [
+        "vapostproc",
+        "vah264lpenc",
+        "queue",
+        "h264parse"
+    ].join(" ! "),
+    audioPipeline: AAC_PIPELINE,
+    muxer: "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
+    extension: "mp4"
+  },
+  {
+    id: "hwenc-dmabuf-h264-vaapi",
+    videoPipeline: [
+        "vapostproc",
+        "vah264enc",
+        "queue",
+        "h264parse"
+    ].join(" ! "),
+    audioPipeline: AAC_PIPELINE,
+    muxer: "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
+    extension: "mp4"
+  },
+  {
+    id: "swenc-dmabuf-h264-openh264",
+    videoPipeline: [
+        "glupload ! glcolorconvert ! gldownload ! queue",
+        "openh264enc deblocking=off background-detection=false complexity=low adaptive-quantization=false qp-max=26 qp-min=26 multi-thread=%T slice-mode=auto",
+        "queue",
+        "h264parse"
+    ].join(" ! "),
+    audioPipeline: AAC_PIPELINE,
+    muxer: "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
+    extension: "mp4"
+  },
+  {
+    id: "swenc-memfd-h264-openh264",
+    videoPipeline: [
+        "videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T",
+        "queue",
+        "openh264enc deblocking=off background-detection=false complexity=low adaptive-quantization=false qp-max=26 qp-min=26 multi-thread=%T slice-mode=auto",
+        "queue",
+        "h264parse"
+    ].join(" ! "),
+    audioPipeline: AAC_PIPELINE,
+    muxer: "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
+    extension: "mp4"
+  },
+  {
+    id: "swenc-dmabuf-vp8-vp8enc",
+    videoPipeline: [
+        "glupload ! glcolorconvert ! gldownload ! queue",
+        "vp8enc cpu-used=16 max-quantizer=17 deadline=1 keyframe-mode=disabled threads=%T static-threshold=1000 buffer-size=20000",
+        "queue",
+    ].join(" ! "),
+    audioPipeline: VORBIS_PIPELINE,
+    muxer: "webmmux",
+    extension: "webm"
+  },
+  {
+    id: "swenc-memfd-vp8-vp8enc",
+    videoPipeline: [
+      'videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T',
+      'queue',
+      'vp8enc cpu-used=16 max-quantizer=17 deadline=1 keyframe-mode=disabled threads=%T static-threshold=1000 buffer-size=20000',
+      'queue'
+    ].join(" ! "),
+    audioPipeline: VORBIS_PIPELINE,
+    muxer: "webmmux",
+    extension: "webm"
+  }
 ];
 
-const VIDEO_PIPELINE = VIDEO_COMPONENT.join(' ! ');
-
-const AUDIO_COMPONENT = [
-  'vorbisenc',
-  'queue'
-];
-
-const AUDIO_PIPELINE = AUDIO_COMPONENT.join(' ! ');
-
-const MUX_PIPELINE = 'webmmux';
-
-const MUX_EXTENSION = 'webm';
 
 
 export default class ScreencastWithAudio extends Extension {
     enable() {
+        // Internal variables.
+        this._configureIndex = 0;
+
         // Reference from Main UI
         this._screenshotUI = Main.screenshotUI;
         this._showPointerButtonContainer = this._screenshotUI._showPointerButtonContainer;
@@ -118,40 +180,66 @@ export default class ScreencastWithAudio extends Extension {
     // Privates
 
     async _screencastAsync(filename, options) {
-        try {
-            let pipeline = this._makePipelineString(VIDEO_PIPELINE, AUDIO_PIPELINE, MUX_PIPELINE);
-            if (pipeline) {
-                options['pipeline'] = new GLib.Variant('s', pipeline);
+        while (this._configureIndex <= configures.length) {
+            try {
+                let configure = configures[this._configureIndex];
+
+                let pipeline = this._makePipelineString(
+                    configure.videoPipeline,
+                    configure.audioPipeline,
+                    configure.muxer
+                );
+
+                console.log(pipeline);
+
+                if (pipeline) {
+                    options['pipeline'] = new GLib.Variant('s', pipeline);
+                }
+                var [success, filepath] = await this._origProxyScreencast.call(this._screencastProxy, filename, options);
+                if (success) {
+                    filepath = this._fixFilePath(filepath, configure.extension);
+                }
+                return [success, filepath];
+            } catch (e) {
+                this._configureIndex++;
             }
-            var [success, filepath] = await this._origProxyScreencast.call(this._screencastProxy, filename, options);
-            if (success) {
-                filepath = this._fixFilePath(filepath);
-            }
-            return [success, filepath];
-        } catch (e) {
-            print(e);
-            throw e;
         }
+
+        // If it reached here, all of pipeline configures are failed.
+        throw Error("Tried all configure and failed!");
     }
 
     async _screencastAreaAsync(x, y, w, h, filename, options) {
-        try {
-            let pipeline = this._makePipelineString(VIDEO_PIPELINE, AUDIO_PIPELINE, MUX_PIPELINE);
-            if (pipeline) {
-                options['pipeline'] = new GLib.Variant('s', pipeline);
+        while (this._configureIndex <= configures.length) {
+            try {
+                let configure = configures[this._configureIndex];
+
+                let pipeline = this._makePipelineString(
+                    configure.videoPipeline,
+                    configure.audioPipeline,
+                    configure.muxer
+                );
+
+                console.log(pipeline);
+
+                if (pipeline) {
+                    options['pipeline'] = new GLib.Variant('s', pipeline);
+                }
+                var [success, filepath] = await this._origProxyScreencastArea.call(this._screencastProxy, x, y, w, h, filename, options);
+                if (success) {
+                    filepath = this._fixFilePath(filepath, configure.extension);
+                }
+                return [success, filepath];
+            } catch (e) {
+                this._configureIndex++;
             }
-            var [success, filepath] = await this._origProxyScreencastArea.call(this._screencastProxy, x, y, w, h, filename, options);
-            if (success) {
-                filepath = this._fixFilePath(filepath);
-            }
-            return [success, filepath];
-        } catch (e) {
-            console.warn(e);
-            throw e;
         }
+
+        // If it reached here, all of pipeline configures are failed.
+        throw Error("Tried all configure and failed!");
     }
 
-    _fixFilePath(filepath) {
+    _fixFilePath(filepath, extension) {
         console.log(`Fix file path: ${filepath}`);
 
         let hasDesktopAudio = this._desktopAudioButton.checked;
@@ -162,7 +250,7 @@ export default class ScreencastWithAudio extends Extension {
             let lastPoint = filepath.lastIndexOf('.')
             if (lastPoint !== -1) {
                 let newFileStem = filepath.substring(0, lastPoint);
-                let newFilepath = `${newFileStem}.${MUX_EXTENSION}`;
+                let newFilepath = `${newFileStem}.${extension}`;
 
                 console.log(`- Into : ${newFilepath}`);
 
