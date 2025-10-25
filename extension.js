@@ -117,7 +117,6 @@ export default class ScreencastExtraFeature extends Extension {
         // Reference from Main UI
         this._screenshotUI = Main.screenshotUI;
         this._showPointerButtonContainer = this._screenshotUI._showPointerButtonContainer;
-        this._showPointerButton = this._screenshotUI._showPointerButton;
         this._shotButton = this._screenshotUI._shotButton;
         this._screencastProxy = this._screenshotUI._screencastProxy;
 
