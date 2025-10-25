@@ -202,19 +202,75 @@ export default class ScreencastExtraFeature extends Extension {
     }
 
     disable() {
-        this._shotButton.disconnect(this._shotButtonNotifyChecked);
-        this._screenshotUI.remove_child(this._desktopAudioTooltip);
-        this._screenshotUI.remove_child(this._micAudioTooltip);
-        this._showPointerButtonContainer.remove_child(this._desktopAudioButton);
-        this._showPointerButtonContainer.remove_child(this._micAudioButton);
+        // Release Mixer Control
+        if (this._mixerControl) {
+            if (this._mixerSrcChanged) {
+                this._mixerControl.disconnect(this._mixerSrcChanged);
+                this._mixerSrcChanged = null;
+            }
+
+            if (this._mixerSinkChanged) {
+                this._mixerControl.disconnect(this._mixerSinkChanged);
+                this._mixerSinkChanged = null;
+            }
+
+            this._mixerControl.close();
+            this._mixerControl = null;
+        }
 
         // Revert Monkey patch
-        this._screencastProxy.ScreencastAsync = this._origProxyScreencast;
-        this._screencastProxy.ScreencastAreaAsync = this._origProxyScreencastArea;
+        if (this._screencastProxy) {
+            if (this._origProxyScreencast) {
+                this._screencastProxy.ScreencastAsync = this._origProxyScreencast;
+                this._origProxyScreencast = null;
+            }
 
-        this._mixerControl.disconnect(this._mixerSrcChanged);
-        this._mixerControl.disconnect(this._mixerSinkChanged);
-        this._mixerControl.close();
+            if (this._origProxyScreencastArea) {
+                this._screencastProxy.ScreencastAreaAsync = this._origProxyScreencastArea;
+                this._origProxyScreencastArea = null;
+            }
+
+            this._screencastProxy = null;
+        }
+
+        // Revert UI
+        if (this._shotButton) {
+            if (this._shotButtonNotifyChecked) {
+                this._shotButton.disconnect(this._shotButtonNotifyChecked);
+                this._shotButtonNotifyChecked = null;
+            }
+            this._shotButton = null;
+        }
+
+        if (this._screenshotUI) {
+            if (this._desktopAudioTooltip) {
+                this._screenshotUI.remove_child(this._desktopAudioTooltip);
+                this._desktopAudioTooltip.destroy();
+                this._desktopAudioTooltip = null;
+            }
+
+            if (this._micAudioTooltip) {
+                this._screenshotUI.remove_child(this._micAudioTooltip);
+                this._micAudioTooltip.destroy();
+                this._micAudioTooltip = null;
+            }
+            this._screenshotUI = null;
+        }
+
+        if (this._showPointerButtonContainer) {
+            if (this._desktopAudioButton) {
+                this._showPointerButtonContainer.remove_child(this._desktopAudioButton);
+                this._desktopAudioButton.destroy();
+                this._desktopAudioButton = null;
+            }
+
+            if (this._micAudioButton) {
+                this._showPointerButtonContainer.remove_child(this._micAudioButton);
+                this._micAudioButton.destroy();
+                this._micAudioButton = null;
+            }
+            this._showPointerButtonContainer = null;
+        }
     }
 
     // Privates
