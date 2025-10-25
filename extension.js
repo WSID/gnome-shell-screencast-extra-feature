@@ -137,7 +137,6 @@ export default class ScreencastExtraFeature extends Extension {
         this._desktopAudioTooltip = new Screenshot.Tooltip(
           this._desktopAudioButton,
           {
-            text: 'Record Desktop Audio',
             style_class: 'screenshot-ui-tooltip',
             visible: false
           }
@@ -146,7 +145,6 @@ export default class ScreencastExtraFeature extends Extension {
         this._micAudioTooltip = new Screenshot.Tooltip(
           this._micAudioButton,
           {
-            text: 'Record Mic Audio',
             style_class: 'screenshot-ui-tooltip',
             visible: false
           }
@@ -389,13 +387,25 @@ export default class ScreencastExtraFeature extends Extension {
 
     _onSinkChanged() {
         let sink = this._mixerControl.get_default_sink();
-        let sinkPort = sink.get_port();
-        this._desktopAudioTooltip.text = `Record Desktop Audio\n${sinkPort.human_port}: ${sink.description}`;
+        this._desktopAudioButton.reactive = (sink !== null);
+
+        if (sink) {
+            let sinkPort = sink.get_port();
+            this._desktopAudioTooltip.text = `Record Desktop Audio\n${sinkPort.human_port}: ${sink.description}`;
+        } else {
+            this._desktopAudioTooltip.text = `Cannot record Desktop Audio.\nNo audio device.`;
+        }
     }
 
     _onSrcChanged() {
         let src = this._mixerControl.get_default_source();
-        let srcPort = src.get_port();
-        this._micAudioTooltip.text = `Record Mic Audio\n${srcPort.human_port}: ${src.description}`;
+        this._micAudioButton.reactive = (src !== null);
+
+        if (src) {
+            let srcPort = src.get_port();
+            this._micAudioTooltip.text = `Record Mic Audio\n${srcPort.human_port}: ${src.description}`;
+        } else {
+            this._desktopAudioTooltip.text = `Cannot record Mic Audio.\nNo audio device.`;
+        }
     }
 }
