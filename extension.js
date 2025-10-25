@@ -109,7 +109,7 @@ const configures = [
 
 
 
-export default class ScreencastWithAudio extends Extension {
+export default class ScreencastExtraFeature extends Extension {
     enable() {
         // Internal variables.
         this._configureIndex = 0;

@@ -1,7 +1,7 @@
 {
-  "name": "Screencast with Audio",
-  "description": "Include Audio in Screen Cast",
-  "uuid": "screencast.with.audio@wissle.me",
+  "name": "Screencast extra Feature",
+  "description": "Add extra features to built-in screencast feature.",
+  "uuid": "screencast.extra.feature@wissle.me",
   "shell-version": [
     "49"
   ]
