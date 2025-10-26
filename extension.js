@@ -16,22 +16,38 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-import St from 'gi://St';
-import Gvc from 'gi://Gvc';
+// GIR imports
+
 import GLib from 'gi://GLib';
+import Gvc from 'gi://Gvc';
+import St from 'gi://St';
+
+
+// Shell imports
 
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Screenshot from 'resource:///org/gnome/shell/ui/screenshot.js';
 
+
 // Some Constants
 
-// Copied from Gnome Shell Screencast Service. This is probably in separated process, so I cannot monkey-patch on it.
-
-
+/// A pipeline for audio record, in vorbis.
 const VORBIS_PIPELINE = "vorbisenc ! queue";
+
+/// A pipeline for audio record, in aac.
 const AAC_PIPELINE = "avenc_aac ! queue"
 
+/// Configuration for pipeline.
+/// video pipelines are copied from gnome-shell screencast service.
+/// They would be probably in separated service, so I cannot monkey-patch on it.
+///
+/// It is array of objects.
+/// - id: Name of configuration.
+/// - videoPipeline: Video Pipeline.
+/// - audioPipeline: Audio Pipeline.
+/// - muxer: A muxer to mux video and audio.
+/// - extension: Extension of the screencast file.
 const configures = [
   {
     id: "hwenc-dmabuf-h264-vaapi-lp",
@@ -120,7 +136,7 @@ export default class ScreencastExtraFeature extends Extension {
         this._shotButton = this._screenshotUI._shotButton;
         this._screencastProxy = this._screenshotUI._screencastProxy;
 
-        // Created widgets
+        // Create widgets and tooltips.
         this._desktopAudioButton = new St.Button({
           style_class: 'screenshot-ui-show-pointer-button',
           icon_name: 'audio-speakers-symbolic',
@@ -150,7 +166,6 @@ export default class ScreencastExtraFeature extends Extension {
           }
         );
 
-        // Add widgets
         this._showPointerButtonContainer.insert_child_at_index(
           this._desktopAudioButton,
           0
@@ -163,7 +178,7 @@ export default class ScreencastExtraFeature extends Extension {
         this._screenshotUI.add_child(this._desktopAudioTooltip);
         this._screenshotUI.add_child(this._micAudioTooltip);
 
-        // connect to signals.
+        // Connect to signals.
         this._shotButtonNotifyChecked = this._shotButton.connect (
           'notify::checked',
           (_object, _pspec) => {
@@ -172,7 +187,7 @@ export default class ScreencastExtraFeature extends Extension {
           }
         );
 
-        // Created control
+        // Create control - to get default devices.
         this._mixerControl = new Gvc.MixerControl({name: "Extension Screencast with Audio"});
         this._mixerControl.open();
 
@@ -275,6 +290,14 @@ export default class ScreencastExtraFeature extends Extension {
 
     // Privates
 
+    /// Monkey patch for screencast async.
+    ///
+    /// Modify option for our configuration.
+    ///
+    /// filename: string: File name without extension.
+    /// options: object: Options for screen cast.
+    ///
+    /// returns: (boolean, string): Success and the result filename with extension.
     async _screencastAsync(filename, options) {
         while (this._configureIndex <= configures.length) {
             try {
@@ -285,8 +308,6 @@ export default class ScreencastExtraFeature extends Extension {
                     configure.audioPipeline,
                     configure.muxer
                 );
-
-                console.log(pipeline);
 
                 if (pipeline) {
                     options['pipeline'] = new GLib.Variant('s', pipeline);
@@ -305,6 +326,18 @@ export default class ScreencastExtraFeature extends Extension {
         throw Error("Tried all configure and failed!");
     }
 
+    /// Monkey patch for screencast async.
+    ///
+    /// Modify option for our configuration.
+    ///
+    /// x: number: left coordinate of area.
+    /// y: number: top coordinate or area.
+    /// w: number: Width of area.
+    /// h: number: Height of area.
+    /// filename: string: File name without extension.
+    /// options: object: Options for screen cast.
+    ///
+    /// returns: (boolean, string): Success and the result filename with extension.
     async _screencastAreaAsync(x, y, w, h, filename, options) {
         while (this._configureIndex <= configures.length) {
             try {
@@ -315,8 +348,6 @@ export default class ScreencastExtraFeature extends Extension {
                     configure.audioPipeline,
                     configure.muxer
                 );
-
-                console.log(pipeline);
 
                 if (pipeline) {
                     options['pipeline'] = new GLib.Variant('s', pipeline);
@@ -335,6 +366,14 @@ export default class ScreencastExtraFeature extends Extension {
         throw Error("Tried all configure and failed!");
     }
 
+    /// Fix file path with wrong extension.
+    ///
+    /// Usually to fix '.unknown' file path.
+    ///
+    /// filepath: string: A filepath, with worng extension.
+    /// extension: string: Desired extension of the file.
+    ///
+    /// returns: string: The new file path.
     _fixFilePath(filepath, extension) {
         console.log(`Fix file path: ${filepath}`);
 
@@ -359,6 +398,13 @@ export default class ScreencastExtraFeature extends Extension {
         }
     }
 
+    /// Make pipeline string for given set of pipeline descriptions.
+    ///
+    /// video: string: Video Pipeline.
+    /// audio: string: Audio Pipeline.
+    /// mux: string: Muxer pipeline.
+    ///
+    /// returns: string: A combined pipeline description.
     _makePipelineString(video, audio, mux) {
         var desktopAudioSource = null;
         var desktopAudioChannels = 0;
@@ -441,6 +487,9 @@ export default class ScreencastExtraFeature extends Extension {
         }
     }
 
+    /// Update to changed sink information.
+    ///
+    /// Sink is usually a output device like speaker.
     _onSinkChanged() {
         let sink = this._mixerControl.get_default_sink();
         this._desktopAudioButton.reactive = (sink !== null);
@@ -453,6 +502,9 @@ export default class ScreencastExtraFeature extends Extension {
         }
     }
 
+    /// Update to changed source information.
+    ///
+    /// Source is usually a input device like microphone.
     _onSrcChanged() {
         let src = this._mixerControl.get_default_source();
         this._micAudioButton.reactive = (src !== null);
