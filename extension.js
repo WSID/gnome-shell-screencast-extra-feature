@@ -25,7 +25,7 @@ import St from 'gi://St';
 
 // Shell imports
 
-import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
+import {Extension, gettext} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Screenshot from 'resource:///org/gnome/shell/ui/screenshot.js';
 
@@ -496,9 +496,12 @@ export default class ScreencastExtraFeature extends Extension {
 
         if (sink) {
             let sinkPort = sink.get_port();
-            this._desktopAudioTooltip.text = `Record Desktop Audio\n${sinkPort.human_port}: ${sink.description}`;
+            this._desktopAudioTooltip.text =
+                gettext("Record Desktop Audio\n%s: %s")
+                    .format (sinkPort.human_port, sink.description);
         } else {
-            this._desktopAudioTooltip.text = `Cannot record Desktop Audio.\nNo audio device.`;
+            this._desktopAudioTooltip.text =
+                gettext("Cannot record Desktop Audio.\nNo audio device.");
         }
     }
 
@@ -511,9 +514,12 @@ export default class ScreencastExtraFeature extends Extension {
 
         if (src) {
             let srcPort = src.get_port();
-            this._micAudioTooltip.text = `Record Mic Audio\n${srcPort.human_port}: ${src.description}`;
+            this._micAudioTooltip.text =
+                gettext("Record Mic Audio\n%s: %s")
+                    .format(srcPort.human_port, src.description);
         } else {
-            this._desktopAudioTooltip.text = `Cannot record Mic Audio.\nNo audio device.`;
+            this._desktopAudioTooltip.text =
+                gettext("Cannot record Mic Audio.\nNo audio device.");
         }
     }
 }

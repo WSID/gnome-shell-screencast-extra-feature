@@ -1,0 +1,44 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025 Wissle.
+# This file is distributed under the same license as the screencast.extra.feature package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: screencast.extra.feature 0.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-10-26 17:51+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: extension.js:500
+#, javascript-format
+msgid ""
+"Record Desktop Audio\n"
+"%s: %s"
+msgstr ""
+
+#: extension.js:504
+msgid ""
+"Cannot record Desktop Audio.\n"
+"No audio device."
+msgstr ""
+
+#: extension.js:518
+#, javascript-format
+msgid ""
+"Record Mic Audio\n"
+"%s: %s"
+msgstr ""
+
+#: extension.js:522
+msgid ""
+"Cannot record Mic Audio.\n"
+"No audio device."
+msgstr ""
