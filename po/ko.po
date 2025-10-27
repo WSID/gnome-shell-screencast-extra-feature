@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: screencast.extra.feature 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-26 17:51+0900\n"
+"POT-Creation-Date: 2025-10-27 21:46+0900\n"
 "PO-Revision-Date: 2025-10-26 17:51+0900\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,7 +17,16 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: extension.js:500
+#: extension.js:165
+#, fuzzy
+msgid "Desktop Audio"
+msgstr "데스크탑 소리"
+
+#: extension.js:176
+msgid "Mic Audio"
+msgstr "마이크 소리"
+
+#: extension.js:533
 #, javascript-format
 msgid ""
 "Record Desktop Audio\n"
@@ -26,7 +35,7 @@ msgstr ""
 "데스크탑 소리 녹음\n"
 "%s: %s"
 
-#: extension.js:504
+#: extension.js:537
 msgid ""
 "Cannot record Desktop Audio.\n"
 "No audio device."
@@ -34,7 +43,7 @@ msgstr ""
 "데스크탑 소리를 녹음할 수 없어요.\n"
 "소리 장치가 없어요."
 
-#: extension.js:518
+#: extension.js:555
 #, javascript-format
 msgid ""
 "Record Mic Audio\n"
@@ -43,7 +52,7 @@ msgstr ""
 "마이크 소리 녹음\n"
 "%s: %s"
 
-#: extension.js:522
+#: extension.js:559
 msgid ""
 "Cannot record Mic Audio.\n"
 "No audio device."

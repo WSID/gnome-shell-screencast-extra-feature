@@ -18,6 +18,8 @@
 
 // GIR imports
 
+import Clutter from 'gi://Clutter'
+import GObject from 'gi://GObject'
 import GLib from 'gi://GLib';
 import Gvc from 'gi://Gvc';
 import St from 'gi://St';
@@ -123,7 +125,27 @@ const configures = [
   }
 ];
 
+/// Icon Label Button that used in screen shot UI.
+///
+/// Copied from gnome-shell.
+const IconLabelButton = GObject.registerClass(
+class IconLabelButton extends St.Button {
+    _init(iconName, label, params) {
+        super._init(params);
 
+        this._container = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            style_class: 'icon-label-button-container',
+        });
+        this.set_child(this._container);
+
+        this._container.add_child(new St.Icon({icon_name: iconName}));
+        this._container.add_child(new St.Label({
+            text: label,
+            x_align: Clutter.ActorAlign.CENTER,
+        }));
+    }
+});
 
 export default class ScreencastExtraFeature extends Extension {
     enable() {
@@ -132,23 +154,33 @@ export default class ScreencastExtraFeature extends Extension {
 
         // Reference from Main UI
         this._screenshotUI = Main.screenshotUI;
+        this._typeButtonContainer = this._screenshotUI._typeButtonContainer;
         this._showPointerButtonContainer = this._screenshotUI._showPointerButtonContainer;
         this._shotButton = this._screenshotUI._shotButton;
         this._screencastProxy = this._screenshotUI._screencastProxy;
 
         // Create widgets and tooltips.
-        this._desktopAudioButton = new St.Button({
-          style_class: 'screenshot-ui-show-pointer-button',
-          icon_name: 'audio-speakers-symbolic',
-          toggle_mode: true,
-          visible: ! this._shotButton.checked
-        });
-        this._micAudioButton = new St.Button({
-          style_class: 'screenshot-ui-show-pointer-button',
-          icon_name: 'audio-input-microphone-symbolic',
-          toggle_mode: true,
-          visible: ! this._shotButton.checked
-        });
+        this._desktopAudioButton = new IconLabelButton(
+            "audio-speakers-symbolic",
+            gettext("Desktop Audio"),
+            {
+                style_class: 'screenshot-ui-type-button',
+                toggle_mode: true,
+                x_expand: true,
+                reactive: this._shotButton.checked
+            }
+        );
+
+        this._micAudioButton = new IconLabelButton(
+            "audio-input-microphone-symbolic",
+            gettext("Mic Audio"),
+            {
+                style_class: 'screenshot-ui-type-button',
+                toggle_mode: true,
+                x_expand: true,
+                reactive: this._shotButton.checked
+            }
+        );
 
         this._desktopAudioTooltip = new Screenshot.Tooltip(
           this._desktopAudioButton,
@@ -166,14 +198,8 @@ export default class ScreencastExtraFeature extends Extension {
           }
         );
 
-        this._showPointerButtonContainer.insert_child_at_index(
-          this._desktopAudioButton,
-          0
-        );
-        this._showPointerButtonContainer.insert_child_at_index(
-          this._micAudioButton,
-          1
-        );
+        this._typeButtonContainer.add_child(this._desktopAudioButton);
+        this._typeButtonContainer.add_child(this._micAudioButton);
 
         this._screenshotUI.add_child(this._desktopAudioTooltip);
         this._screenshotUI.add_child(this._micAudioTooltip);
@@ -182,8 +208,8 @@ export default class ScreencastExtraFeature extends Extension {
         this._shotButtonNotifyChecked = this._shotButton.connect (
           'notify::checked',
           (_object, _pspec) => {
-            this._desktopAudioButton.visible = ! this._shotButton.checked
-            this._micAudioButton.visible = ! this._shotButton.checked
+              this._updateDesktopAudioButton();
+              this._updateMicAudioButton();
           }
         );
 
@@ -194,19 +220,19 @@ export default class ScreencastExtraFeature extends Extension {
         this._mixerSinkChanged = this._mixerControl.connect(
           'default-sink-changed',
           (_object, _id) => {
-            this._onSinkChanged();
+            this._updateDesktopAudioButton();
           }
         );
 
         this._mixerSrcChanged = this._mixerControl.connect(
           'default-source-changed',
           (_object, _id) => {
-            this._onSrcChanged();
+            this._updateMicAudioButton();
           }
         );
 
-        this._onSinkChanged();
-        this._onSrcChanged();
+        this._updateDesktopAudioButton();
+        this._updateMicAudioButton();
 
         // Monkey patch
         this._origProxyScreencast = this._screencastProxy.ScreencastAsync;
@@ -272,18 +298,22 @@ export default class ScreencastExtraFeature extends Extension {
             this._screenshotUI = null;
         }
 
-        if (this._showPointerButtonContainer) {
+        if (this._typeButtonContainer) {
             if (this._desktopAudioButton) {
-                this._showPointerButtonContainer.remove_child(this._desktopAudioButton);
+                this._typeButtonContainer.remove_child(this._desktopAudioButton);
                 this._desktopAudioButton.destroy();
                 this._desktopAudioButton = null;
             }
 
             if (this._micAudioButton) {
-                this._showPointerButtonContainer.remove_child(this._micAudioButton);
+                this._typeButtonContainer.remove_child(this._micAudioButton);
                 this._micAudioButton.destroy();
                 this._micAudioButton = null;
             }
+            this._typeButtonContainer = null;
+        }
+
+        if (this._showPointerButtonContainer) {
             this._showPointerButtonContainer = null;
         }
     }
@@ -490,36 +520,44 @@ export default class ScreencastExtraFeature extends Extension {
     /// Update to changed sink information.
     ///
     /// Sink is usually a output device like speaker.
-    _onSinkChanged() {
-        let sink = this._mixerControl.get_default_sink();
-        this._desktopAudioButton.reactive = (sink !== null);
-
-        if (sink) {
-            let sinkPort = sink.get_port();
-            this._desktopAudioTooltip.text =
-                gettext("Record Desktop Audio\n%s: %s")
-                    .format (sinkPort.human_port, sink.description);
+    _updateDesktopAudioButton() {
+        if (this._shotButton.checked) {
+            this._desktopAudioButton.reactive = false;
         } else {
-            this._desktopAudioTooltip.text =
-                gettext("Cannot record Desktop Audio.\nNo audio device.");
+            let sink = this._mixerControl.get_default_sink();
+            this._desktopAudioButton.reactive = (sink !== null);
+
+            if (sink) {
+                let sinkPort = sink.get_port();
+                this._desktopAudioTooltip.text =
+                    gettext("Record Desktop Audio\n%s: %s")
+                        .format (sinkPort.human_port, sink.description);
+            } else {
+                this._desktopAudioTooltip.text =
+                    gettext("Cannot record Desktop Audio.\nNo audio device.");
+            }
         }
     }
 
     /// Update to changed source information.
     ///
     /// Source is usually a input device like microphone.
-    _onSrcChanged() {
-        let src = this._mixerControl.get_default_source();
-        this._micAudioButton.reactive = (src !== null);
-
-        if (src) {
-            let srcPort = src.get_port();
-            this._micAudioTooltip.text =
-                gettext("Record Mic Audio\n%s: %s")
-                    .format(srcPort.human_port, src.description);
+    _updateMicAudioButton() {
+        if (this._shotButton.checked) {
+            this._micAudioButton.reactive = false;
         } else {
-            this._desktopAudioTooltip.text =
-                gettext("Cannot record Mic Audio.\nNo audio device.");
+            let src = this._mixerControl.get_default_source();
+            this._micAudioButton.reactive = (src !== null);
+
+            if (src) {
+                let srcPort = src.get_port();
+                this._micAudioTooltip.text =
+                    gettext("Record Mic Audio\n%s: %s")
+                        .format(srcPort.human_port, src.description);
+            } else {
+                this._desktopAudioTooltip.text =
+                    gettext("Cannot record Mic Audio.\nNo audio device.");
+            }
         }
     }
 }

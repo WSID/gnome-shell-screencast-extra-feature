@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: screencast.extra.feature 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-26 17:51+0900\n"
+"POT-Creation-Date: 2025-10-27 21:46+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,27 +17,35 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:500
+#: extension.js:165
+msgid "Desktop Audio"
+msgstr ""
+
+#: extension.js:176
+msgid "Mic Audio"
+msgstr ""
+
+#: extension.js:533
 #, javascript-format
 msgid ""
 "Record Desktop Audio\n"
 "%s: %s"
 msgstr ""
 
-#: extension.js:504
+#: extension.js:537
 msgid ""
 "Cannot record Desktop Audio.\n"
 "No audio device."
 msgstr ""
 
-#: extension.js:518
+#: extension.js:555
 #, javascript-format
 msgid ""
 "Record Mic Audio\n"
 "%s: %s"
 msgstr ""
 
-#: extension.js:522
+#: extension.js:559
 msgid ""
 "Cannot record Mic Audio.\n"
 "No audio device."
