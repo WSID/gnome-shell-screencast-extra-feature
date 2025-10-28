@@ -17,35 +17,35 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:165
-msgid "Desktop Audio"
+#: extension.js:169
+msgid "Desktop"
 msgstr ""
 
-#: extension.js:176
-msgid "Mic Audio"
+#: extension.js:179
+msgid "Mic"
 msgstr ""
 
-#: extension.js:533
+#: extension.js:589
 #, javascript-format
 msgid ""
 "Record Desktop Audio\n"
 "%s: %s"
 msgstr ""
 
-#: extension.js:537
+#: extension.js:593
 msgid ""
 "Cannot record Desktop Audio.\n"
 "No audio device."
 msgstr ""
 
-#: extension.js:555
+#: extension.js:611
 #, javascript-format
 msgid ""
 "Record Mic Audio\n"
 "%s: %s"
 msgstr ""
 
-#: extension.js:559
+#: extension.js:615
 msgid ""
 "Cannot record Mic Audio.\n"
 "No audio device."

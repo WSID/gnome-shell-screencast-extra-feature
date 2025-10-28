@@ -166,22 +166,20 @@ export default class ScreencastExtraFeature extends Extension {
         // Create widgets and tooltips.
         this._desktopAudioButton = new IconLabelButton(
             "audio-speakers-symbolic",
-            gettext("Desktop Audio"),
+            gettext("Desktop"),
             {
                 style_class: 'screenshot-ui-type-button',
                 toggle_mode: true,
-                x_expand: true,
                 reactive: this._shotButton.checked
             }
         );
 
         this._micAudioButton = new IconLabelButton(
             "audio-input-microphone-symbolic",
-            gettext("Mic Audio"),
+            gettext("Mic"),
             {
                 style_class: 'screenshot-ui-type-button',
                 toggle_mode: true,
-                x_expand: true,
                 reactive: this._shotButton.checked
             }
         );

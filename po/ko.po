@@ -17,15 +17,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: extension.js:165
-msgid "Desktop Audio"
-msgstr "데스크탑 소리"
+#: extension.js:169
+msgid "Desktop"
+msgstr "데스크탑"
 
-#: extension.js:176
-msgid "Mic Audio"
-msgstr "마이크 소리"
+#: extension.js:179
+msgid "Mic"
+msgstr "마이크"
 
-#: extension.js:533
+#: extension.js:589
 #, javascript-format
 msgid ""
 "Record Desktop Audio\n"
@@ -34,7 +34,7 @@ msgstr ""
 "데스크탑 소리 녹음\n"
 "%s: %s"
 
-#: extension.js:537
+#: extension.js:593
 msgid ""
 "Cannot record Desktop Audio.\n"
 "No audio device."
@@ -42,7 +42,7 @@ msgstr ""
 "데스크탑 소리를 녹음할 수 없어요.\n"
 "소리 장치가 없어요."
 
-#: extension.js:555
+#: extension.js:611
 #, javascript-format
 msgid ""
 "Record Mic Audio\n"
@@ -51,7 +51,7 @@ msgstr ""
 "마이크 소리 녹음\n"
 "%s: %s"
 
-#: extension.js:559
+#: extension.js:615
 msgid ""
 "Cannot record Mic Audio.\n"
 "No audio device."
