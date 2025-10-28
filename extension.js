@@ -29,10 +29,13 @@ import St from 'gi://St';
 
 import {Extension, gettext} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as Screenshot from 'resource:///org/gnome/shell/ui/screenshot.js';
 
 
 // Some Constants
+
+const FRAMERATES = [15, 24, 30, 60];
 
 /// A pipeline for audio record, in vorbis.
 const VORBIS_PIPELINE = "vorbisenc ! queue";
@@ -151,6 +154,7 @@ export default class ScreencastExtraFeature extends Extension {
     enable() {
         // Internal variables.
         this._configureIndex = 0;
+        this._optionFramerate = 30;
 
         // Reference from Main UI
         this._screenshotUI = Main.screenshotUI;
@@ -204,12 +208,49 @@ export default class ScreencastExtraFeature extends Extension {
         this._screenshotUI.add_child(this._desktopAudioTooltip);
         this._screenshotUI.add_child(this._micAudioTooltip);
 
+
+        this._framerateButton = new St.Button({
+            style_class: 'screenshot-ui-show-pointer-button',
+            label: "30 FPS",
+            visible: !this._shotButton.checked
+        });
+
+        this._frameratePopupMenu = new PopupMenu.PopupMenu(
+            this._framerateButton,
+            0.5,
+            St.Side.BOTTOM
+        );
+        this._frameratePopupMenu.actor.visible = false;
+        this._screenshotUI.add_child(this._frameratePopupMenu.actor);
+
+        for (let framerate of FRAMERATES) {
+            let label = `${framerate} FPS`;
+            this._frameratePopupMenu.addAction(
+                label,
+                () => {
+                    this._optionFramerate = framerate;
+                    this._framerateButton.label = label;
+                }
+            );
+        }
+
+        this._showPointerButtonContainer.insert_child_at_index(this._framerateButton, 0);
+
+        this._framerateButtonClicked = this._framerateButton.connect(
+            'clicked',
+            (_object, _button) => {
+                this._frameratePopupMenu.toggle();
+            }
+        );
+
         // Connect to signals.
         this._shotButtonNotifyChecked = this._shotButton.connect (
           'notify::checked',
           (_object, _pspec) => {
               this._updateDesktopAudioButton();
               this._updateMicAudioButton();
+
+              this._framerateButton.visible = !this._shotButton.checked;
           }
         );
 
@@ -295,6 +336,12 @@ export default class ScreencastExtraFeature extends Extension {
                 this._micAudioTooltip.destroy();
                 this._micAudioTooltip = null;
             }
+
+            if (this._frameratePopupMenu) {
+                this._screenshotUI.remove_child(this._frameratePopupMenu.actor);
+                this._frameratePopupMenu.destroy();
+                this._frameratePopupMenu = null;
+            }
             this._screenshotUI = null;
         }
 
@@ -314,6 +361,15 @@ export default class ScreencastExtraFeature extends Extension {
         }
 
         if (this._showPointerButtonContainer) {
+            if (this._framerateButton) {
+                if (this._framerateButtonClicked) {
+                    this._framerateButton.disconnect(this._framerateButtonClicked);
+                    this._framerateButtonClicked = null;
+                }
+                this._showPointerButtonContainer.remove_child(this._framerateButton);
+                this._framerateButton.destroy();
+                this._framerateButton = null;
+            }
             this._showPointerButtonContainer = null;
         }
     }
@@ -329,6 +385,7 @@ export default class ScreencastExtraFeature extends Extension {
     ///
     /// returns: (boolean, string): Success and the result filename with extension.
     async _screencastAsync(filename, options) {
+        options['framerate'] = new GLib.Variant('i', this._optionFramerate);
         while (this._configureIndex <= configures.length) {
             try {
                 let configure = configures[this._configureIndex];
@@ -369,6 +426,7 @@ export default class ScreencastExtraFeature extends Extension {
     ///
     /// returns: (boolean, string): Success and the result filename with extension.
     async _screencastAreaAsync(x, y, w, h, filename, options) {
+        options['framerate'] = new GLib.Variant('i', this._optionFramerate);
         while (this._configureIndex <= configures.length) {
             try {
                 let configure = configures[this._configureIndex];
