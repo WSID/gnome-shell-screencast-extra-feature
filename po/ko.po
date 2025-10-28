@@ -18,7 +18,6 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #: extension.js:165
-#, fuzzy
 msgid "Desktop Audio"
 msgstr "데스크탑 소리"
 
