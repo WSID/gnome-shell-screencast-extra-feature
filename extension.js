@@ -18,24 +18,17 @@
 
 // GIR imports
 
-import Clutter from 'gi://Clutter'
-import GObject from 'gi://GObject'
 import GLib from 'gi://GLib';
-import Gvc from 'gi://Gvc';
-import St from 'gi://St';
-
 
 // Shell imports
 
 import {Extension, gettext} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import * as Screenshot from 'resource:///org/gnome/shell/ui/screenshot.js';
 
+import * as PartAudio from "./parts/partaudio.js"
+import * as PartFramerate from "./parts/partframerate.js"
 
 // Some Constants
-
-const FRAMERATES = [15, 24, 30, 60];
 
 /// A pipeline for audio record, in vorbis.
 const VORBIS_PIPELINE = "vorbisenc ! queue";
@@ -128,28 +121,6 @@ const configures = [
   }
 ];
 
-/// Icon Label Button that used in screen shot UI.
-///
-/// Copied from gnome-shell.
-const IconLabelButton = GObject.registerClass(
-class IconLabelButton extends St.Button {
-    _init(iconName, label, params) {
-        super._init(params);
-
-        this._container = new St.BoxLayout({
-            orientation: Clutter.Orientation.VERTICAL,
-            style_class: 'icon-label-button-container',
-        });
-        this.set_child(this._container);
-
-        this._container.add_child(new St.Icon({icon_name: iconName}));
-        this._container.add_child(new St.Label({
-            text: label,
-            x_align: Clutter.ActorAlign.CENTER,
-        }));
-    }
-});
-
 export default class ScreencastExtraFeature extends Extension {
     enable() {
         // Internal variables.
@@ -158,120 +129,30 @@ export default class ScreencastExtraFeature extends Extension {
 
         // Reference from Main UI
         this._screenshotUI = Main.screenshotUI;
-        this._typeButtonContainer = this._screenshotUI._typeButtonContainer;
         this._showPointerButtonContainer = this._screenshotUI._showPointerButtonContainer;
         this._shotButton = this._screenshotUI._shotButton;
+        this._typeButtonContainer = this._screenshotUI._typeButtonContainer;
         this._screencastProxy = this._screenshotUI._screencastProxy;
 
-        // Create widgets and tooltips.
-        this._desktopAudioButton = new IconLabelButton(
-            "audio-speakers-symbolic",
-            gettext("Desktop"),
-            {
-                style_class: 'screenshot-ui-type-button',
-                toggle_mode: true,
-                reactive: this._shotButton.checked
-            }
+        // Extension parts.
+        this._partAudio = new PartAudio.PartAudio(
+            this._screenshotUI,
+            this._typeButtonContainer
         );
 
-        this._micAudioButton = new IconLabelButton(
-            "audio-input-microphone-symbolic",
-            gettext("Mic"),
-            {
-                style_class: 'screenshot-ui-type-button',
-                toggle_mode: true,
-                reactive: this._shotButton.checked
-            }
-        );
-
-        this._desktopAudioTooltip = new Screenshot.Tooltip(
-          this._desktopAudioButton,
-          {
-            style_class: 'screenshot-ui-tooltip',
-            visible: false
-          }
-        );
-
-        this._micAudioTooltip = new Screenshot.Tooltip(
-          this._micAudioButton,
-          {
-            style_class: 'screenshot-ui-tooltip',
-            visible: false
-          }
-        );
-
-        this._typeButtonContainer.add_child(this._desktopAudioButton);
-        this._typeButtonContainer.add_child(this._micAudioButton);
-
-        this._screenshotUI.add_child(this._desktopAudioTooltip);
-        this._screenshotUI.add_child(this._micAudioTooltip);
-
-
-        this._framerateButton = new St.Button({
-            style_class: 'screenshot-ui-show-pointer-button',
-            label: "30 FPS",
-            visible: !this._shotButton.checked
-        });
-
-        this._frameratePopupMenu = new PopupMenu.PopupMenu(
-            this._framerateButton,
-            0.5,
-            St.Side.BOTTOM
-        );
-        this._frameratePopupMenu.actor.visible = false;
-        this._screenshotUI.add_child(this._frameratePopupMenu.actor);
-
-        for (let framerate of FRAMERATES) {
-            let label = `${framerate} FPS`;
-            this._frameratePopupMenu.addAction(
-                label,
-                () => {
-                    this._optionFramerate = framerate;
-                    this._framerateButton.label = label;
-                }
-            );
-        }
-
-        this._showPointerButtonContainer.insert_child_at_index(this._framerateButton, 0);
-
-        this._framerateButtonClicked = this._framerateButton.connect(
-            'clicked',
-            (_object, _button) => {
-                this._frameratePopupMenu.toggle();
-            }
+        this._partFramerate = new PartFramerate.PartFramerate(
+            this._screenshotUI,
+            this._showPointerButtonContainer
         );
 
         // Connect to signals.
         this._shotButtonNotifyChecked = this._shotButton.connect (
           'notify::checked',
           (_object, _pspec) => {
-              this._updateDesktopAudioButton();
-              this._updateMicAudioButton();
-
-              this._framerateButton.visible = !this._shotButton.checked;
+              this._partAudio.set_enabled(!this._shotButton.checked);
+              this._partFramerate.set_enabled(!this._shotButton.checked);
           }
         );
-
-        // Create control - to get default devices.
-        this._mixerControl = new Gvc.MixerControl({name: "Extension Screencast with Audio"});
-        this._mixerControl.open();
-
-        this._mixerSinkChanged = this._mixerControl.connect(
-          'default-sink-changed',
-          (_object, _id) => {
-            this._updateDesktopAudioButton();
-          }
-        );
-
-        this._mixerSrcChanged = this._mixerControl.connect(
-          'default-source-changed',
-          (_object, _id) => {
-            this._updateMicAudioButton();
-          }
-        );
-
-        this._updateDesktopAudioButton();
-        this._updateMicAudioButton();
 
         // Monkey patch
         this._origProxyScreencast = this._screencastProxy.ScreencastAsync;
@@ -282,22 +163,6 @@ export default class ScreencastExtraFeature extends Extension {
     }
 
     disable() {
-        // Release Mixer Control
-        if (this._mixerControl) {
-            if (this._mixerSrcChanged) {
-                this._mixerControl.disconnect(this._mixerSrcChanged);
-                this._mixerSrcChanged = null;
-            }
-
-            if (this._mixerSinkChanged) {
-                this._mixerControl.disconnect(this._mixerSinkChanged);
-                this._mixerSinkChanged = null;
-            }
-
-            this._mixerControl.close();
-            this._mixerControl = null;
-        }
-
         // Revert Monkey patch
         if (this._screencastProxy) {
             if (this._origProxyScreencast) {
@@ -322,53 +187,19 @@ export default class ScreencastExtraFeature extends Extension {
             this._shotButton = null;
         }
 
+        if (this._partAudio) {
+            this._partAudio.destroy();
+            this._partAudio = null;
+        }
+
+        if (this._partFramerate) {
+            this._partFramerate.destroy();
+            this._partFramerate = null;
+        }
+
+
         if (this._screenshotUI) {
-            if (this._desktopAudioTooltip) {
-                this._screenshotUI.remove_child(this._desktopAudioTooltip);
-                this._desktopAudioTooltip.destroy();
-                this._desktopAudioTooltip = null;
-            }
-
-            if (this._micAudioTooltip) {
-                this._screenshotUI.remove_child(this._micAudioTooltip);
-                this._micAudioTooltip.destroy();
-                this._micAudioTooltip = null;
-            }
-
-            if (this._frameratePopupMenu) {
-                this._screenshotUI.remove_child(this._frameratePopupMenu.actor);
-                this._frameratePopupMenu.destroy();
-                this._frameratePopupMenu = null;
-            }
             this._screenshotUI = null;
-        }
-
-        if (this._typeButtonContainer) {
-            if (this._desktopAudioButton) {
-                this._typeButtonContainer.remove_child(this._desktopAudioButton);
-                this._desktopAudioButton.destroy();
-                this._desktopAudioButton = null;
-            }
-
-            if (this._micAudioButton) {
-                this._typeButtonContainer.remove_child(this._micAudioButton);
-                this._micAudioButton.destroy();
-                this._micAudioButton = null;
-            }
-            this._typeButtonContainer = null;
-        }
-
-        if (this._showPointerButtonContainer) {
-            if (this._framerateButton) {
-                if (this._framerateButtonClicked) {
-                    this._framerateButton.disconnect(this._framerateButtonClicked);
-                    this._framerateButtonClicked = null;
-                }
-                this._showPointerButtonContainer.remove_child(this._framerateButton);
-                this._framerateButton.destroy();
-                this._framerateButton = null;
-            }
-            this._showPointerButtonContainer = null;
         }
     }
 
@@ -383,7 +214,7 @@ export default class ScreencastExtraFeature extends Extension {
     ///
     /// returns: (boolean, string): Success and the result filename with extension.
     async _screencastAsync(filename, options) {
-        options['framerate'] = new GLib.Variant('i', this._optionFramerate);
+        options['framerate'] = new GLib.Variant('i', this._partFramerate.get_framerate());
         while (this._configureIndex <= configures.length) {
             try {
                 let configure = configures[this._configureIndex];
@@ -424,7 +255,7 @@ export default class ScreencastExtraFeature extends Extension {
     ///
     /// returns: (boolean, string): Success and the result filename with extension.
     async _screencastAreaAsync(x, y, w, h, filename, options) {
-        options['framerate'] = new GLib.Variant('i', this._optionFramerate);
+        options['framerate'] = new GLib.Variant('i', this._partFramerate.get_framerate());
         while (this._configureIndex <= configures.length) {
             try {
                 let configure = configures[this._configureIndex];
@@ -439,7 +270,7 @@ export default class ScreencastExtraFeature extends Extension {
                     options['pipeline'] = new GLib.Variant('s', pipeline);
                 }
                 var [success, filepath] = await this._origProxyScreencastArea.call(this._screencastProxy, x, y, w, h, filename, options);
-                if (success) {
+                if (success && pipeline) {
                     filepath = this._fixFilePath(filepath, configure.extension);
                 }
                 return [success, filepath];
@@ -463,25 +294,19 @@ export default class ScreencastExtraFeature extends Extension {
     _fixFilePath(filepath, extension) {
         console.log(`Fix file path: ${filepath}`);
 
-        let hasDesktopAudio = this._desktopAudioButton.checked;
-        let hasMicAudio = this._micAudioButton.checked;
-
-        if (hasDesktopAudio || hasMicAudio) {
-            // Split extension from file name
-            let lastPoint = filepath.lastIndexOf('.')
-            if (lastPoint !== -1) {
-                let newFileStem = filepath.substring(0, lastPoint);
-                let newFilepath = `${newFileStem}.${extension}`;
-
-                console.log(`- Into : ${newFilepath}`);
-
-                // Rename the file. (using GLib.)
-                GLib.rename(filepath, newFilepath);
-                return newFilepath;
-            }
-        } else {
-            return filepath;
+        // Split extension from file name
+        var newFileStem = filepath;
+        let lastPoint = filepath.lastIndexOf('.')
+        if (lastPoint !== -1) {
+            newFileStem = filepath.substring(0, lastPoint);
         }
+        let newFilepath = `${newFileStem}.${extension}`;
+
+        console.log(`- Into : ${newFilepath}`);
+
+        // Rename the file. (using GLib.)
+        GLib.rename(filepath, newFilepath);
+        return newFilepath;
     }
 
     /// Make pipeline string for given set of pipeline descriptions.
@@ -492,55 +317,7 @@ export default class ScreencastExtraFeature extends Extension {
     ///
     /// returns: string: A combined pipeline description.
     _makePipelineString(video, audio, mux) {
-        var desktopAudioSource = null;
-        var desktopAudioChannels = 0;
-        if (this._desktopAudioButton.checked) {
-            let sink = this._mixerControl.get_default_sink();
-            let sinkName = sink.name;
-            let sinkChannelMap = sink.channel_map;
-            desktopAudioChannels = sinkChannelMap.get_num_channels();
-
-            let monitorName = sinkName + ".monitor";
-            let audioSourceComp = [
-                `pulsesrc device=${monitorName} provide-clock=false`,
-
-                // Need to specify channels, so that right channels are applied.
-                `capsfilter caps=audio/x-raw,channels=${desktopAudioChannels}`
-            ];
-            desktopAudioSource = audioSourceComp.join(" ! ");
-        }
-
-        var micAudioSource = null;
-        if (this._micAudioButton.checked) {
-            let src = this._mixerControl.get_default_source();
-            let srcName = src.name;
-            let srcChannelMap = src.channel_map;
-            let srcChannels = srcChannelMap.get_num_channels();
-            let audioSourceComp = [
-                `pulsesrc device=${srcName} provide-clock=false`,
-
-                // Need to specify channels, so that right channels are applied.
-                `capsfilter caps=audio/x-raw,channels=${srcChannels}`
-            ];
-
-            micAudioSource = audioSourceComp.join(" ! ");
-        }
-
-        var audioSource = null;
-        if (desktopAudioSource !== null && micAudioSource !== null) {
-            let segments = [
-                `${desktopAudioSource} ! audiomixer name=am latency=100000000`,
-                `${micAudioSource} ! am.`,
-                `am. ! capsfilter caps=audio/x-raw,channels=${desktopAudioChannels}`
-            ];
-
-            audioSource = segments.join(" ");
-        } else if (desktopAudioSource !== null) {
-            audioSource = desktopAudioSource;
-        } else if (micAudioSource !== null) {
-            audioSource = micAudioSource;
-        }
-
+        let audioSource = this._partAudio.get_added_audio_input();
 
         if (audioSource !== null) {
             // Put 3 segments as pipeline description string.
@@ -570,50 +347,6 @@ export default class ScreencastExtraFeature extends Extension {
             return segments.join(" ");
         } else {
             return null;
-        }
-    }
-
-    /// Update to changed sink information.
-    ///
-    /// Sink is usually a output device like speaker.
-    _updateDesktopAudioButton() {
-        if (this._shotButton.checked) {
-            this._desktopAudioButton.reactive = false;
-        } else {
-            let sink = this._mixerControl.get_default_sink();
-            this._desktopAudioButton.reactive = (sink !== null);
-
-            if (sink) {
-                let sinkPort = sink.get_port();
-                this._desktopAudioTooltip.text =
-                    gettext("Record Desktop Audio\n%s: %s")
-                        .format (sinkPort.human_port, sink.description);
-            } else {
-                this._desktopAudioTooltip.text =
-                    gettext("Cannot record Desktop Audio.\nNo audio device.");
-            }
-        }
-    }
-
-    /// Update to changed source information.
-    ///
-    /// Source is usually a input device like microphone.
-    _updateMicAudioButton() {
-        if (this._shotButton.checked) {
-            this._micAudioButton.reactive = false;
-        } else {
-            let src = this._mixerControl.get_default_source();
-            this._micAudioButton.reactive = (src !== null);
-
-            if (src) {
-                let srcPort = src.get_port();
-                this._micAudioTooltip.text =
-                    gettext("Record Mic Audio\n%s: %s")
-                        .format(srcPort.human_port, src.description);
-            } else {
-                this._desktopAudioTooltip.text =
-                    gettext("Cannot record Mic Audio.\nNo audio device.");
-            }
         }
     }
 }

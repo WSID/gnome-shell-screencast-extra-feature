@@ -1,0 +1,278 @@
+/* partaudio.js
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+
+import Clutter from 'gi://Clutter'
+import GObject from 'gi://GObject'
+import Gvc from 'gi://Gvc';
+import St from 'gi://St';
+
+
+import {gettext} from 'resource:///org/gnome/shell/extensions/extension.js';
+
+import * as Screenshot from 'resource:///org/gnome/shell/ui/screenshot.js';
+
+
+import * as PartBase from "./partbase.js";
+
+/// Icon Label Button that used in screen shot UI.
+///
+/// Copied from gnome-shell.
+const IconLabelButton = GObject.registerClass(
+class IconLabelButton extends St.Button {
+    _init(iconName, label, params) {
+        super._init(params);
+
+        this._container = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            style_class: 'icon-label-button-container',
+        });
+        this.set_child(this._container);
+
+        this._container.add_child(new St.Icon({icon_name: iconName}));
+        this._container.add_child(new St.Label({
+            text: label,
+            x_align: Clutter.ActorAlign.CENTER,
+        }));
+    }
+});
+
+export class PartAudio extends PartBase.PartBase {
+    constructor(screenshotUI, typeButtonContainer) {
+        super();
+        this.enabled = false;
+        this.screenshotUI = screenshotUI;
+        this.typeButtonContainer = typeButtonContainer;
+
+
+        // Add UI
+        this.desktopAudioButton = new IconLabelButton(
+            "audio-speakers-symbolic",
+            gettext("Desktop"),
+            {
+                style_class: 'screenshot-ui-type-button',
+                toggle_mode: true,
+                reactive: false
+            }
+        );
+
+        this.micAudioButton = new IconLabelButton(
+            "audio-input-microphone-symbolic",
+            gettext("Mic"),
+            {
+                style_class: 'screenshot-ui-type-button',
+                toggle_mode: true,
+                reactive: false
+            }
+        );
+
+        this.desktopAudioTooltip = new Screenshot.Tooltip(
+          this.desktopAudioButton,
+          {
+            style_class: 'screenshot-ui-tooltip',
+            visible: false
+          }
+        );
+
+        this.micAudioTooltip = new Screenshot.Tooltip(
+          this.micAudioButton,
+          {
+            style_class: 'screenshot-ui-tooltip',
+            visible: false
+          }
+        );
+
+        this.typeButtonContainer.add_child(this.desktopAudioButton);
+        this.typeButtonContainer.add_child(this.micAudioButton);
+
+        this.screenshotUI.add_child(this.desktopAudioTooltip);
+        this.screenshotUI.add_child(this.micAudioTooltip);
+
+
+        // Mixer Control.
+        this.mixerControl = new Gvc.MixerControl({name: "Extension Screencast with Audio"});
+        this.mixerControl.open();
+
+        this.mixerSinkChanged = this.mixerControl.connect(
+          'default-sink-changed',
+          (_object, _id) => {
+            this.updateDesktopAudioButton();
+          }
+        );
+
+        this.mixerSrcChanged = this.mixerControl.connect(
+          'default-source-changed',
+          (_object, _id) => {
+            this.updateMicAudioButton();
+          }
+        );
+
+        this.updateDesktopAudioButton();
+        this.updateMicAudioButton();
+    }
+
+    destroy() {
+        if (this.mixerControl) {
+            if (this.mixerSrcChanged) {
+                this.mixerControl.disconnect(this.mixerSrcChanged);
+                this.mixerSrcChanged = null;
+            }
+
+            if (this.mixerSinkChanged) {
+                this.mixerControl.disconnect(this.mixerSinkChanged);
+                this.mixerSinkChanged = null;
+            }
+
+            this.mixerControl.close();
+            this.mixerControl = null;
+        }
+
+        if (this.screenshotUI) {
+            if (this.desktopAudioTooltip) {
+                this.screenshotUI.remove_child(this.desktopAudioTooltip);
+                this.desktopAudioTooltip.destroy();
+                this.desktopAudioTooltip = null;
+            }
+
+            if (this.micAudioTooltip) {
+                this.screenshotUI.remove_child(this.micAudioTooltip);
+                this.micAudioTooltip.destroy();
+                this.micAudioTooltip = null;
+            }
+            this.screenshotUI = null;
+        }
+
+        if (this.typeButtonContainer) {
+            if (this.desktopAudioButton) {
+                this.typeButtonContainer.remove_child(this.desktopAudioButton);
+                this.desktopAudioButton.destroy();
+                this.desktopAudioButton = null;
+            }
+
+            if (this.micAudioButton) {
+                this.typeButtonContainer.remove_child(this.micAudioButton);
+                this.micAudioButton.destroy();
+                this.micAudioButton = null;
+            }
+            this.typeButtonContainer = null;
+        }
+    }
+
+    set_enabled(enabled) {
+        this.enabled = enabled;
+        this.updateDesktopAudioButton();
+        this.updateMicAudioButton();
+    }
+
+    get_added_audio_input() {
+        var desktopAudioSource = null;
+        var desktopAudioChannels = 0;
+        if (this.desktopAudioButton.checked) {
+            let sink = this.mixerControl.get_default_sink();
+            let sinkName = sink.name;
+            let sinkChannelMap = sink.channel_map;
+            desktopAudioChannels = sinkChannelMap.get_num_channels();
+
+            let monitorName = sinkName + ".monitor";
+            let audioSourceComp = [
+                `pulsesrc device=${monitorName} provide-clock=false`,
+
+                // Need to specify channels, so that right channels are applied.
+                `capsfilter caps=audio/x-raw,channels=${desktopAudioChannels}`
+            ];
+            desktopAudioSource = audioSourceComp.join(" ! ");
+        }
+
+        var micAudioSource = null;
+        if (this.micAudioButton.checked) {
+            let src = this.mixerControl.get_default_source();
+            let srcName = src.name;
+            let srcChannelMap = src.channel_map;
+            let srcChannels = srcChannelMap.get_num_channels();
+            let audioSourceComp = [
+                `pulsesrc device=${srcName} provide-clock=false`,
+
+                // Need to specify channels, so that right channels are applied.
+                `capsfilter caps=audio/x-raw,channels=${srcChannels}`
+            ];
+
+            micAudioSource = audioSourceComp.join(" ! ");
+        }
+
+        if (desktopAudioSource !== null && micAudioSource !== null) {
+            let segments = [
+                `${desktopAudioSource} ! audiomixer name=am latency=100000000`,
+                `${micAudioSource} ! am.`,
+                `am. ! capsfilter caps=audio/x-raw,channels=${desktopAudioChannels}`
+            ];
+
+            return segments.join(" ");
+        } else if (desktopAudioSource !== null) {
+            return desktopAudioSource;
+        } else if (micAudioSource !== null) {
+            return micAudioSource;
+        } else {
+            return null;
+        }
+    }
+
+
+    /// Update to changed sink information.
+    ///
+    /// Sink is usually a output device like speaker.
+    updateDesktopAudioButton() {
+        if (! this.enabled) {
+            this.desktopAudioButton.reactive = false;
+        } else {
+            let sink = this.mixerControl.get_default_sink();
+            this.desktopAudioButton.reactive = (sink !== null);
+
+            if (sink) {
+                let sinkPort = sink.get_port();
+                this.desktopAudioTooltip.text =
+                    gettext("Record Desktop Audio\n%s: %s")
+                        .format (sinkPort.human_port, sink.description);
+            } else {
+                this.desktopAudioTooltip.text =
+                    gettext("Cannot record Desktop Audio.\nNo audio device.");
+            }
+        }
+    }
+
+    /// Update to changed source information.
+    ///
+    /// Source is usually a input device like microphone.
+    updateMicAudioButton() {
+        if (! this.enabled) {
+            this.micAudioButton.reactive = false;
+        } else {
+            let src = this.mixerControl.get_default_source();
+            this.micAudioButton.reactive = (src !== null);
+
+            if (src) {
+                let srcPort = src.get_port();
+                this.micAudioTooltip.text =
+                    gettext("Record Mic Audio\n%s: %s")
+                        .format(srcPort.human_port, src.description);
+            } else {
+                this.desktopAudioTooltip.text =
+                    gettext("Cannot record Mic Audio.\nNo audio device.");
+            }
+        }
+    }
+}
