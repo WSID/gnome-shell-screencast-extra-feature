@@ -216,18 +216,19 @@ export default class ScreencastExtraFeature extends Extension {
     async _screencastAsync(filename, options) {
         options['framerate'] = new GLib.Variant('i', this._partFramerate.get_framerate());
         while (this._configureIndex <= configures.length) {
+            let configure = configures[this._configureIndex];
+
+            let pipeline = this._makePipelineString(
+                configure.videoPipeline,
+                configure.audioPipeline,
+                configure.muxer
+            );
+
+            if (pipeline) {
+                options['pipeline'] = new GLib.Variant('s', pipeline);
+            }
+
             try {
-                let configure = configures[this._configureIndex];
-
-                let pipeline = this._makePipelineString(
-                    configure.videoPipeline,
-                    configure.audioPipeline,
-                    configure.muxer
-                );
-
-                if (pipeline) {
-                    options['pipeline'] = new GLib.Variant('s', pipeline);
-                }
                 var [success, filepath] = await this._origProxyScreencast.call(this._screencastProxy, filename, options);
                 if (success) {
                     filepath = this._fixFilePath(filepath, configure.extension);
@@ -235,6 +236,11 @@ export default class ScreencastExtraFeature extends Extension {
                 return [success, filepath];
             } catch (e) {
                 this._configureIndex++;
+                console.log(`Tried configure [${this._configureIndex}] ${configure.id}`);
+                console.log(`- VIDEO: ${configure.videoPipeline}`);
+                console.log(`- AUDIO: ${configure.audioPipeline}`);
+                console.log(`- MUXER: ${configure.muxer}`);
+                console.log(`- ERROR: ${e}`);
             }
         }
 
@@ -257,18 +263,19 @@ export default class ScreencastExtraFeature extends Extension {
     async _screencastAreaAsync(x, y, w, h, filename, options) {
         options['framerate'] = new GLib.Variant('i', this._partFramerate.get_framerate());
         while (this._configureIndex <= configures.length) {
+            let configure = configures[this._configureIndex];
+
+            let pipeline = this._makePipelineString(
+                configure.videoPipeline,
+                configure.audioPipeline,
+                configure.muxer
+            );
+
+            if (pipeline) {
+                options['pipeline'] = new GLib.Variant('s', pipeline);
+            }
+
             try {
-                let configure = configures[this._configureIndex];
-
-                let pipeline = this._makePipelineString(
-                    configure.videoPipeline,
-                    configure.audioPipeline,
-                    configure.muxer
-                );
-
-                if (pipeline) {
-                    options['pipeline'] = new GLib.Variant('s', pipeline);
-                }
                 var [success, filepath] = await this._origProxyScreencastArea.call(this._screencastProxy, x, y, w, h, filename, options);
                 if (success && pipeline) {
                     filepath = this._fixFilePath(filepath, configure.extension);
@@ -276,6 +283,11 @@ export default class ScreencastExtraFeature extends Extension {
                 return [success, filepath];
             } catch (e) {
                 this._configureIndex++;
+                console.log(`Tried configure [${this._configureIndex}] ${configure.id}`);
+                console.log(`- VIDEO: ${configure.videoPipeline}`);
+                console.log(`- AUDIO: ${configure.audioPipeline}`);
+                console.log(`- MUXER: ${configure.muxer}`);
+                console.log(`- ERROR: ${e}`);
             }
         }
 
