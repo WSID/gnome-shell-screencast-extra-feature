@@ -3,7 +3,5 @@
   "description": "Add extra features to built-in screencast feature.",
   "uuid": "screencast.extra.feature@wissle.me",
   "gettext-domain": "screencsat.extra.feature@wissle.me",
-  "shell-version": [
-    "49"
-  ]
+  "shell-version": ["46", "47", "48", "49"]
 }

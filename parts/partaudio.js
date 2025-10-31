@@ -25,10 +25,14 @@ import St from 'gi://St';
 
 import {gettext} from 'resource:///org/gnome/shell/extensions/extension.js';
 
+import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 import * as Screenshot from 'resource:///org/gnome/shell/ui/screenshot.js';
 
-
 import * as PartBase from "./partbase.js";
+
+
+let [SHELL_MAJOR, _] = Config.PACKAGE_VERSION.split('.').map(s => Number(s));
+
 
 /// Icon Label Button that used in screen shot UI.
 ///
@@ -38,10 +42,18 @@ class IconLabelButton extends St.Button {
     _init(iconName, label, params) {
         super._init(params);
 
-        this._container = new St.BoxLayout({
-            orientation: Clutter.Orientation.VERTICAL,
-            style_class: 'icon-label-button-container',
-        });
+        // Option per version
+        let containerProps = {
+            style_class: 'icon-label-button-container'
+        };
+
+        if (48 <= SHELL_MAJOR) { /* 48 ~ 49 */
+            containerProps.orientation = Clutter.Orientation.VERTICAL;
+        } else { /* 46 ~ 47 */
+            containerProps.vertical = true;
+        }
+
+        this._container = new St.BoxLayout(containerProps);
         this.set_child(this._container);
 
         this._container.add_child(new St.Icon({icon_name: iconName}));
