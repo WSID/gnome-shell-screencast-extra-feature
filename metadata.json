@@ -1,7 +1,8 @@
 {
   "name": "Screencast extra Feature",
-  "description": "Add extra features to built-in screencast feature.",
+  "description": "Add extra features in built-in screen cast feature.\n\n* Record Audio with it.\n* Specify framerate. (Up to 60 Hz)",
   "uuid": "screencast.extra.feature@wissle.me",
+  "url": "https://github.com/WSID/gnome-shell-screencast-extra-feature",
   "gettext-domain": "screencsat.extra.feature@wissle.me",
   "shell-version": ["46", "47", "48", "49"]
 }
