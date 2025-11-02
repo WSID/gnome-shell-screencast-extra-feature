@@ -27,6 +27,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import * as PartAudio from "./parts/partaudio.js"
 import * as PartFramerate from "./parts/partframerate.js"
+import * as PartQuickStop from "./parts/partquickstop.js"
 
 // Some Constants
 
@@ -145,6 +146,10 @@ export default class ScreencastExtraFeature extends Extension {
             this._showPointerButtonContainer
         );
 
+        this._partQuickStop = new PartQuickStop.PartQuickStop(
+            this._screenshotUI
+        );
+
         // Connect to signals.
         this._shotButtonNotifyChecked = this._shotButton.connect (
           'notify::checked',
@@ -197,6 +202,10 @@ export default class ScreencastExtraFeature extends Extension {
             this._partFramerate = null;
         }
 
+        if (this._partQuickStop) {
+            this._partQuickStop.destroy();
+            this._partQuickStop = null;
+        }
 
         if (this._screenshotUI) {
             this._screenshotUI = null;

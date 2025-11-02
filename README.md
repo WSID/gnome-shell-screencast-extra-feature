@@ -4,6 +4,7 @@ Adds extra features in gnome-shell's built-in screen cast feature.
 
 - Record Audio with it.
 - Specify framerate. (Up to 60 Hz.)
+- Quick Stop by pressing screen cast key. (Usually <kbd>Shift + Ctrl + Alt + R</kbd>)
 
 This is to aid simple use-cases, like simply recording some screen to share.
 
