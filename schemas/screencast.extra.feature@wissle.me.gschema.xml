@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<schemalist>
+  <schema
+    id="org.gnome.shell.extensions.screencastExtraFeature"
+    path="/org/gnome/shell/extensions/screencastExtraFeature/">
+  </schema>
+</schemalist>

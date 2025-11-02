@@ -4,5 +4,6 @@
   "uuid": "screencast.extra.feature@wissle.me",
   "url": "https://github.com/WSID/gnome-shell-screencast-extra-feature",
   "gettext-domain": "screencsat.extra.feature@wissle.me",
+  "settings-schema": "org.gnome.shell.extensions.screencastExtraFeature",
   "shell-version": ["46", "47", "48", "49"]
 }
