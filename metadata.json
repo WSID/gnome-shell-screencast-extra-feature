@@ -1,6 +1,6 @@
 {
   "name": "Screencast extra Feature",
-  "description": "Add extra features in built-in screen cast feature.\n\n* Record Audio with it.\n* Specify framerate. (Up to 60 Hz)\n* Quick Stop by pressing screen cast key. (Usually Ctrl + Alt + Shift + R)",
+  "description": "Add extra features in built-in screen cast feature.\n\n* Record Audio with it.\n* Specify framerate. (Up to 60 Hz)\n* Downsize resolution. (75%, 50% or 33%)\n* Quick Stop by pressing screen cast key. (Usually Ctrl + Alt + Shift + R)",
   "uuid": "screencast.extra.feature@wissle.me",
   "url": "https://github.com/WSID/gnome-shell-screencast-extra-feature",
   "gettext-domain": "screencsat.extra.feature@wissle.me",

@@ -22,36 +22,58 @@ import GLib from 'gi://GLib';
 
 // Shell imports
 
-import {Extension, gettext} from 'resource:///org/gnome/shell/extensions/extension.js';
+import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import * as PartAudio from "./parts/partaudio.js"
 import * as PartFramerate from "./parts/partframerate.js"
 import * as PartQuickStop from "./parts/partquickstop.js"
+import * as PartDownsize from './parts/partdownsize.js';
 
 // Some Constants
 
-/// A pipeline for audio record, in vorbis.
+
+// Audio Pipeline Description.
+
+/** A pipeline for audio record, in vorbis. */
 const VORBIS_PIPELINE = "vorbisenc ! queue";
 
-/// A pipeline for audio record, in aac.
+/** A pipeline for audio record, in aac. */
 const AAC_PIPELINE = "avenc_aac ! queue"
 
-/// Configuration for pipeline.
-/// video pipelines are copied from gnome-shell screencast service.
-/// They would be probably in separated service, so I cannot monkey-patch on it.
-///
-/// It is array of objects.
-/// - id: Name of configuration.
-/// - videoPipeline: Video Pipeline.
-/// - audioPipeline: Audio Pipeline.
-/// - muxer: A muxer to mux video and audio.
-/// - extension: Extension of the screencast file.
+
+// Video conversion and resize.
+
+const HWENC_DMABUF_PREP_PIPELINE = "vapostproc";
+
+const SWENC_DMABUF_PREP_PIPELINE = "glupload ! glcolorscale ! glcolorconvert ! gldownload ! queue";
+
+const SWENC_MEMFD_PREP_PIPELINE = "videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T ! videoscale ! queue"
+
+/**
+ * Configuration for pipeline.
+ *
+ * @typedef {object} Configure
+ * @property {string} id Name of configuration.
+ * @property {string} videoPrepPipeline Video Preparation pipeline. (convert & resize)
+ * @property {string} videoPipeline Video encode pipeline.
+ * @property {string} audioPipeline Audio encode pipeline.
+ * @property {string} muxer Muxer pipeline.
+ * @property {string} extension Extension of file name.
+ */
+
+/**
+ * Configuration for pipeline.
+ * video pipelines are copied from gnome-shell screencast service.
+ * They would be probably in separated service, so I cannot monkey-patch on it.
+ *
+ * @type {Configure[]}
+ */
 const configures = [
   {
     id: "hwenc-dmabuf-h264-vaapi-lp",
+    videoPrepPipeline: HWENC_DMABUF_PREP_PIPELINE,
     videoPipeline: [
-        "vapostproc",
         "vah264lpenc",
         "queue",
         "h264parse"
@@ -62,8 +84,8 @@ const configures = [
   },
   {
     id: "hwenc-dmabuf-h264-vaapi",
+    videoPrepPipeline: HWENC_DMABUF_PREP_PIPELINE,
     videoPipeline: [
-        "vapostproc",
         "vah264enc",
         "queue",
         "h264parse"
@@ -74,8 +96,8 @@ const configures = [
   },
   {
     id: "swenc-dmabuf-h264-openh264",
+    videoPrepPipeline: SWENC_DMABUF_PREP_PIPELINE,
     videoPipeline: [
-        "glupload ! glcolorconvert ! gldownload ! queue",
         "openh264enc deblocking=off background-detection=false complexity=low adaptive-quantization=false qp-max=26 qp-min=26 multi-thread=%T slice-mode=auto",
         "queue",
         "h264parse"
@@ -86,9 +108,8 @@ const configures = [
   },
   {
     id: "swenc-memfd-h264-openh264",
+    videoPrepPipeline: SWENC_MEMFD_PREP_PIPELINE,
     videoPipeline: [
-        "videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T",
-        "queue",
         "openh264enc deblocking=off background-detection=false complexity=low adaptive-quantization=false qp-max=26 qp-min=26 multi-thread=%T slice-mode=auto",
         "queue",
         "h264parse"
@@ -99,8 +120,8 @@ const configures = [
   },
   {
     id: "swenc-dmabuf-vp8-vp8enc",
+    videoPrepPipeline: SWENC_DMABUF_PREP_PIPELINE,
     videoPipeline: [
-        "glupload ! glcolorconvert ! gldownload ! queue",
         "vp8enc cpu-used=16 max-quantizer=17 deadline=1 keyframe-mode=disabled threads=%T static-threshold=1000 buffer-size=20000",
         "queue",
     ].join(" ! "),
@@ -110,9 +131,8 @@ const configures = [
   },
   {
     id: "swenc-memfd-vp8-vp8enc",
+    videoPrepPipeline: SWENC_MEMFD_PREP_PIPELINE,
     videoPipeline: [
-      'videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T',
-      'queue',
       'vp8enc cpu-used=16 max-quantizer=17 deadline=1 keyframe-mode=disabled threads=%T static-threshold=1000 buffer-size=20000',
       'queue'
     ].join(" ! "),
@@ -145,6 +165,11 @@ export default class ScreencastExtraFeature extends Extension {
             this._screenshotUI,
             this._showPointerButtonContainer
         );
+        
+        this._partDownsize = new PartDownsize.PartDownsize(
+            this._screenshotUI,
+            this._showPointerButtonContainer
+        );
 
         this._partQuickStop = new PartQuickStop.PartQuickStop(
             this._screenshotUI
@@ -156,6 +181,7 @@ export default class ScreencastExtraFeature extends Extension {
           (_object, _pspec) => {
               this._partAudio.set_enabled(!this._shotButton.checked);
               this._partFramerate.set_enabled(!this._shotButton.checked);
+              this._partDownsize.set_enabled(!this._shotButton.checked);
           }
         );
 
@@ -201,6 +227,11 @@ export default class ScreencastExtraFeature extends Extension {
             this._partFramerate.destroy();
             this._partFramerate = null;
         }
+        
+        if (this._partDownsize) {
+            this._partDownsize.destroy();
+            this._partDownsize = null;
+        }
 
         if (this._partQuickStop) {
             this._partQuickStop.destroy();
@@ -227,15 +258,9 @@ export default class ScreencastExtraFeature extends Extension {
         while (this._configureIndex <= configures.length) {
             let configure = configures[this._configureIndex];
 
-            let pipeline = this._makePipelineString(
-                configure.videoPipeline,
-                configure.audioPipeline,
-                configure.muxer
-            );
-
-            if (pipeline) {
-                options['pipeline'] = new GLib.Variant('s', pipeline);
-            }
+            // TODO: Get whole presented size.
+            let pipeline = this._makePipelineString(configure, global.screen_width, global.screen_height);
+            options['pipeline'] = new GLib.Variant('s', pipeline);
 
             try {
                 var [success, filepath] = await this._origProxyScreencast.call(this._screencastProxy, filename, options);
@@ -246,6 +271,7 @@ export default class ScreencastExtraFeature extends Extension {
             } catch (e) {
                 this._configureIndex++;
                 console.log(`Tried configure [${this._configureIndex}] ${configure.id}`);
+                console.log(`- VIDEO_PREP: ${configure.videoPrepPipeline}`);
                 console.log(`- VIDEO: ${configure.videoPipeline}`);
                 console.log(`- AUDIO: ${configure.audioPipeline}`);
                 console.log(`- MUXER: ${configure.muxer}`);
@@ -274,25 +300,19 @@ export default class ScreencastExtraFeature extends Extension {
         while (this._configureIndex <= configures.length) {
             let configure = configures[this._configureIndex];
 
-            let pipeline = this._makePipelineString(
-                configure.videoPipeline,
-                configure.audioPipeline,
-                configure.muxer
-            );
-
-            if (pipeline) {
-                options['pipeline'] = new GLib.Variant('s', pipeline);
-            }
+            let pipeline = this._makePipelineString(configure, w, h);
+            options['pipeline'] = new GLib.Variant('s', pipeline);
 
             try {
                 var [success, filepath] = await this._origProxyScreencastArea.call(this._screencastProxy, x, y, w, h, filename, options);
-                if (success && pipeline) {
+                if (success) {
                     filepath = this._fixFilePath(filepath, configure.extension);
                 }
                 return [success, filepath];
             } catch (e) {
                 this._configureIndex++;
                 console.log(`Tried configure [${this._configureIndex}] ${configure.id}`);
+                console.log(`- VIDEO_PREP: ${configure.videoPrepPipeline}`);
                 console.log(`- VIDEO: ${configure.videoPipeline}`);
                 console.log(`- AUDIO: ${configure.audioPipeline}`);
                 console.log(`- MUXER: ${configure.muxer}`);
@@ -330,17 +350,40 @@ export default class ScreencastExtraFeature extends Extension {
         return newFilepath;
     }
 
-    /// Make pipeline string for given set of pipeline descriptions.
-    ///
-    /// video: string: Video Pipeline.
-    /// audio: string: Audio Pipeline.
-    /// mux: string: Muxer pipeline.
-    ///
-    /// returns: string: A combined pipeline description.
-    _makePipelineString(video, audio, mux) {
-        let audioSource = this._partAudio.get_added_audio_input();
+    /**
+     * Make pipeline string for given set of pipeline descriptions.
+     *
+     * @param {Configure} configure A configure to form pipeline string.
+     * @param {number} width Width of screen cast.
+     * @param {number} height Height of screen cast.
+     *
+     * @returns {string} A combined pipeline description.
+     */
+    _makePipelineString(configure, width, height) {
+        var videoSeg = null;
+        let videoPrep = configure.videoPrepPipeline;
+        let video = configure.videoPipeline;
+        let muxer = configure.muxer;
 
-        if (audioSource !== null) {
+        let downsizeRatio = this._partDownsize.getRatio();
+        if (downsizeRatio != 1.00) {
+            let downsizeWidth = Math.floor(width * downsizeRatio);
+            let downsizeHeight = Math.floor(height * downsizeRatio);
+            let downsizeCap = `video/x-raw,width=${downsizeWidth},height=${downsizeHeight}`
+
+            videoSeg = `${videoPrep} ! ${downsizeCap} ! ${video} ! ${muxer} name=mux`;
+        } else {
+            videoSeg = `${videoPrep} ! ${video} ! ${muxer} name=mux`;
+        }
+
+        let audioSource = this._partAudio.get_added_audio_input();
+        if (audioSource === null) {
+
+            // If we don't use audio, we can just use video segment only.
+
+            return videoSeg;
+        } else {
+
             // Put 3 segments as pipeline description string.
             //
             // As screen cast service will prepend and append video source and
@@ -353,21 +396,12 @@ export default class ScreencastExtraFeature extends Extension {
             //
             // 3. mux
             //    Last segment will be append with file sink.
+            
+            let audio = configure.audioPipeline;
+            let audioSeg = `${audioSource} ! ${audio} ! mux.`;
+            let muxerSeg = "mux.";
 
-            let segments = [
-                // First segment will be plugged from video source.
-                // Also define mux element and give it name.
-                `${video} ! ${mux} name=mux`,
-
-                `${audioSource} ! ${audio} ! mux.`,
-
-                // Last segment will be plugged to file sink.
-                "mux."
-            ];
-
-            return segments.join(" ");
-        } else {
-            return null;
+            return `${videoSeg} ${audioSeg} ${muxerSeg}`;
         }
     }
 }
