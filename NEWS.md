@@ -1,3 +1,12 @@
+## 0.1.1
+
+Bug Fix Release
+
+- Fix: Fixed screen cast fail, when framerate is not changed.
+- Fix: Fixed teardown of framerate selector.
+- Misc: Removed unused stylesheet.css
+
+
 ## 0.1
 
 Initial Release
