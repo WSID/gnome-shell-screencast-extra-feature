@@ -31,6 +31,7 @@ export class PartFramerate extends PartBase.PartBase {
         super();
 
         this.enabled = false;
+        this.framerate = 30;
 
         this.screenshotUI = screenshotUI;
         this.showPointerButtonContainer = showPointerButtonContainer;
@@ -70,7 +71,7 @@ export class PartFramerate extends PartBase.PartBase {
     }
 
     destroy() {
-        if (this._showPointerButtonContainer) {
+        if (this.showPointerButtonContainer) {
             if (this.framerateButton) {
                 if (this.framerateButtonClicked) {
                     this.framerateButton.disconnect(this.framerateButtonClicked);
