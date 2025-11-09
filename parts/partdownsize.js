@@ -16,85 +16,18 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-import St from 'gi://St';
-
-import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-
 import * as PartBase from "./partbase.js";
 
 const DOWNSIZE_RATIO = [1.00, 0.75, 0.50, 0.33];
 
-export class PartDownsize extends PartBase.PartUI {
+/** @extends {PartBase.PartPopupSelect<number>} */
+export class PartDownsize extends PartBase.PartPopupSelect {
     constructor(screenshotUI) {
-        super(screenshotUI);
-        this.showPointerButtonContainer = this.screenshotUI._showPointerButtonContainer;
-
-        this.ratio = 1.00;
-        
-        
-        this.downsizeButton = new St.Button({
-            style_class: "screenshot-ui-show-pointer-button",
-            label: "100%",
-            visible: false
-        });
-        this.showPointerButtonContainer.insert_child_at_index(this.downsizeButton, 0);
-        
-        this.downsizePopupMenu = new PopupMenu.PopupMenu (
-            this.downsizeButton,
-            0.5,
-            St.Side.BOTTOM
-        );
-        this.downsizePopupMenu.actor.visible = false;
-        this.screenshotUI.add_child(this.downsizePopupMenu.actor);
-        
-        for (let ratio of DOWNSIZE_RATIO) {
-            let label = `${ratio * 100}%`;
-            this.downsizePopupMenu.addAction(
-                label,
-                () => {
-                    this.ratio = ratio;
-                    this.downsizeButton.label = label;
-                }
-            );
-        }
-        
-        this.downsizeButtonClicked = this.downsizeButton.connect(
-            "clicked",
-            (_object, _button) => {
-                this.downsizePopupMenu.toggle();
-            }
-        );
+        super(screenshotUI, DOWNSIZE_RATIO, 1.00);
     }
-
+    
     /** @override */
-    destroy() {
-        if (this.showPointerButtonContainer) {
-            if (this.downsizeButton) {
-                if (this.downsizeButtonClicked) {
-                    this.downsizeButton.disconnect(this.downsizeButtonClicked);
-                    this.downsizeButtonClicked = null;
-                }
-                this.showPointerButtonContainer.remove_child(this.downsizeButton);
-                this.downsizeButton.destroy();
-                this.downsizeButton = null;
-            }
-            this.showPointerButtonContainer = null;
-        }
-
-        super.destroy();
-    }
-
-    /** @override */
-    onCastModeSelected(selected) {
-        this.downsizeButton.visible = selected;
-    }
-
-    /**
-     * Get selected ratio.
-     *
-     * @returns {number} Selected Ratio.
-     */
-    getRatio() {
-        return this.ratio;
+    makeLabel(item) {
+        return `${item * 100}%`
     }
 }

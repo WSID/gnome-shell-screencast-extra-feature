@@ -146,7 +146,6 @@ export default class ScreencastExtraFeature extends Extension {
     enable() {
         // Internal variables.
         this._configureIndex = 0;
-        this._optionFramerate = 30;
 
         // Reference from Main UI
         this._screenshotUI = Main.screenshotUI;
@@ -192,7 +191,7 @@ export default class ScreencastExtraFeature extends Extension {
             this._partFramerate.destroy();
             this._partFramerate = null;
         }
-        
+
         if (this._partDownsize) {
             this._partDownsize.destroy();
             this._partDownsize = null;
@@ -219,7 +218,7 @@ export default class ScreencastExtraFeature extends Extension {
     ///
     /// returns: (boolean, string): Success and the result filename with extension.
     async _screencastAsync(filename, options) {
-        options['framerate'] = new GLib.Variant('i', this._partFramerate.get_framerate());
+        options['framerate'] = new GLib.Variant('i', this._partFramerate.getSelectedItem());
         while (this._configureIndex <= configures.length) {
             let configure = configures[this._configureIndex];
 
@@ -261,7 +260,7 @@ export default class ScreencastExtraFeature extends Extension {
     ///
     /// returns: (boolean, string): Success and the result filename with extension.
     async _screencastAreaAsync(x, y, w, h, filename, options) {
-        options['framerate'] = new GLib.Variant('i', this._partFramerate.get_framerate());
+        options['framerate'] = new GLib.Variant('i', this._partFramerate.getSelectedItem());
         while (this._configureIndex <= configures.length) {
             let configure = configures[this._configureIndex];
 
@@ -330,7 +329,7 @@ export default class ScreencastExtraFeature extends Extension {
         let video = configure.videoPipeline;
         let muxer = configure.muxer;
 
-        let downsizeRatio = this._partDownsize.getRatio();
+        let downsizeRatio = this._partDownsize.getSelectedItem();
         if (downsizeRatio != 1.00) {
             let downsizeWidth = Math.floor(width * downsizeRatio);
             let downsizeHeight = Math.floor(height * downsizeRatio);
@@ -361,7 +360,7 @@ export default class ScreencastExtraFeature extends Extension {
             //
             // 3. mux
             //    Last segment will be append with file sink.
-            
+
             let audio = configure.audioPipeline;
             let audioSeg = `${audioSource} ! ${audio} ! mux.`;
             let muxerSeg = "mux.";
