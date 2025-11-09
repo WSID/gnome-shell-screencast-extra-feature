@@ -26,15 +26,13 @@ import * as PartBase from "./partbase.js"
 const FRAMERATES = [15, 24, 30, 60];
 
 
-export class PartFramerate extends PartBase.PartBase {
-    constructor (screenshotUI, showPointerButtonContainer) {
-        super();
+export class PartFramerate extends PartBase.PartUI {
+    constructor (screenshotUI) {
+        super(screenshotUI);
+        this.showPointerButtonContainer = this.screenshotUI._showPointerButtonContainer;
 
-        this.enabled = false;
         this.framerate = 30;
 
-        this.screenshotUI = screenshotUI;
-        this.showPointerButtonContainer = showPointerButtonContainer;
 
         this.framerateButton = new St.Button({
             style_class: 'screenshot-ui-show-pointer-button',
@@ -70,6 +68,7 @@ export class PartFramerate extends PartBase.PartBase {
         );
     }
 
+    /** @override */
     destroy() {
         if (this.showPointerButtonContainer) {
             if (this.framerateButton) {
@@ -83,11 +82,13 @@ export class PartFramerate extends PartBase.PartBase {
             }
             this.showPointerButtonContainer = null;
         }
+
+        super.destroy();
     }
 
-    set_enabled(enabled) {
-        this.enabled = enabled;
-        this.framerateButton.visible = this.enabled;
+    /** @override */
+    onCastModeSelected(selected) {
+        this.framerateButton.visible = selected;
     }
 
     get_framerate() {

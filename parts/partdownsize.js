@@ -24,15 +24,12 @@ import * as PartBase from "./partbase.js";
 
 const DOWNSIZE_RATIO = [1.00, 0.75, 0.50, 0.33];
 
-export class PartDownsize extends PartBase.PartBase {
-    constructor(screenshotUI, showPointerButtonContainer) {
-        super();
-        
-        this.enabled = false;
+export class PartDownsize extends PartBase.PartUI {
+    constructor(screenshotUI) {
+        super(screenshotUI);
+        this.showPointerButtonContainer = this.screenshotUI._showPointerButtonContainer;
+
         this.ratio = 1.00;
-        
-        this.screenshotUI = screenshotUI;
-        this.showPointerButtonContainer = showPointerButtonContainer;
         
         
         this.downsizeButton = new St.Button({
@@ -69,8 +66,9 @@ export class PartDownsize extends PartBase.PartBase {
         );
     }
 
+    /** @override */
     destroy() {
-        if (this._showPointerButtonContainer) {
+        if (this.showPointerButtonContainer) {
             if (this.downsizeButton) {
                 if (this.downsizeButtonClicked) {
                     this.downsizeButton.disconnect(this.downsizeButtonClicked);
@@ -82,11 +80,13 @@ export class PartDownsize extends PartBase.PartBase {
             }
             this.showPointerButtonContainer = null;
         }
+
+        super.destroy();
     }
 
-    set_enabled(enabled) {
-        this.enabled = enabled;
-        this.downsizeButton.visible = this.enabled;
+    /** @override */
+    onCastModeSelected(selected) {
+        this.downsizeButton.visible = selected;
     }
 
     /**

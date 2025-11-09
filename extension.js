@@ -150,40 +150,13 @@ export default class ScreencastExtraFeature extends Extension {
 
         // Reference from Main UI
         this._screenshotUI = Main.screenshotUI;
-        this._showPointerButtonContainer = this._screenshotUI._showPointerButtonContainer;
-        this._shotButton = this._screenshotUI._shotButton;
-        this._typeButtonContainer = this._screenshotUI._typeButtonContainer;
         this._screencastProxy = this._screenshotUI._screencastProxy;
 
         // Extension parts.
-        this._partAudio = new PartAudio.PartAudio(
-            this._screenshotUI,
-            this._typeButtonContainer
-        );
-
-        this._partFramerate = new PartFramerate.PartFramerate(
-            this._screenshotUI,
-            this._showPointerButtonContainer
-        );
-        
-        this._partDownsize = new PartDownsize.PartDownsize(
-            this._screenshotUI,
-            this._showPointerButtonContainer
-        );
-
-        this._partQuickStop = new PartQuickStop.PartQuickStop(
-            this._screenshotUI
-        );
-
-        // Connect to signals.
-        this._shotButtonNotifyChecked = this._shotButton.connect (
-          'notify::checked',
-          (_object, _pspec) => {
-              this._partAudio.set_enabled(!this._shotButton.checked);
-              this._partFramerate.set_enabled(!this._shotButton.checked);
-              this._partDownsize.set_enabled(!this._shotButton.checked);
-          }
-        );
+        this._partAudio = new PartAudio.PartAudio(this._screenshotUI);
+        this._partFramerate = new PartFramerate.PartFramerate(this._screenshotUI);
+        this._partDownsize = new PartDownsize.PartDownsize(this._screenshotUI);
+        this._partQuickStop = new PartQuickStop.PartQuickStop(this._screenshotUI);
 
         // Monkey patch
         this._origProxyScreencast = this._screencastProxy.ScreencastAsync;
@@ -210,14 +183,6 @@ export default class ScreencastExtraFeature extends Extension {
         }
 
         // Revert UI
-        if (this._shotButton) {
-            if (this._shotButtonNotifyChecked) {
-                this._shotButton.disconnect(this._shotButtonNotifyChecked);
-                this._shotButtonNotifyChecked = null;
-            }
-            this._shotButton = null;
-        }
-
         if (this._partAudio) {
             this._partAudio.destroy();
             this._partAudio = null;

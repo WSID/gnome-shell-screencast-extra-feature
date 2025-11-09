@@ -64,12 +64,10 @@ class IconLabelButton extends St.Button {
     }
 });
 
-export class PartAudio extends PartBase.PartBase {
-    constructor(screenshotUI, typeButtonContainer) {
-        super();
-        this.enabled = false;
-        this.screenshotUI = screenshotUI;
-        this.typeButtonContainer = typeButtonContainer;
+export class PartAudio extends PartBase.PartUI {
+    constructor(screenshotUI) {
+        super(screenshotUI);
+        this.typeButtonContainer = this.screenshotUI._typeButtonContainer;
 
 
         // Add UI
@@ -138,6 +136,7 @@ export class PartAudio extends PartBase.PartBase {
         this.updateMicAudioButton();
     }
 
+    /** @override */
     destroy() {
         if (this.mixerControl) {
             if (this.mixerSrcChanged) {
@@ -183,10 +182,12 @@ export class PartAudio extends PartBase.PartBase {
             }
             this.typeButtonContainer = null;
         }
+
+        super.destroy();
     }
 
-    set_enabled(enabled) {
-        this.enabled = enabled;
+    /** @override */
+    onCastModeSelected(selected) {
         this.updateDesktopAudioButton();
         this.updateMicAudioButton();
     }
@@ -248,7 +249,7 @@ export class PartAudio extends PartBase.PartBase {
     ///
     /// Sink is usually a output device like speaker.
     updateDesktopAudioButton() {
-        if (! this.enabled) {
+        if (! this.getCastModeSelected()) {
             this.desktopAudioButton.reactive = false;
         } else {
             let sink = this.mixerControl.get_default_sink();
@@ -270,7 +271,7 @@ export class PartAudio extends PartBase.PartBase {
     ///
     /// Source is usually a input device like microphone.
     updateMicAudioButton() {
-        if (! this.enabled) {
+        if (! this.getCastModeSelected()) {
             this.micAudioButton.reactive = false;
         } else {
             let src = this.mixerControl.get_default_source();
