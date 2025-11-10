@@ -19,6 +19,7 @@
 // GIR imports
 
 import GLib from 'gi://GLib';
+import Gst from 'gi://Gst';
 
 // Shell imports
 
@@ -31,6 +32,13 @@ import * as PartQuickStop from "./parts/partquickstop.js"
 import * as PartDownsize from './parts/partdownsize.js';
 
 // Some Constants
+
+/**
+ * A wait time to initialize GStreamer, to inspect for elements.
+ *
+ * Lockup may happen if we initialize GStreamer immediately at enable.
+ */
+const INITIAL_WAIT_TIME = 1000;
 
 
 // Audio Pipeline Description.
@@ -69,7 +77,7 @@ const SWENC_MEMFD_PREP_PIPELINE = "videoconvert chroma-mode=none dither=none mat
  *
  * @type {Configure[]}
  */
-const configures = [
+const CONFIGURES = [
   {
     id: "hwenc-dmabuf-h264-vaapi-lp",
     videoPrepPipeline: HWENC_DMABUF_PREP_PIPELINE,
@@ -142,9 +150,59 @@ const configures = [
   }
 ];
 
+
+/**
+ * Check that pipeline can be created properly.
+ *
+ * NOTE: This just checks existence of elements. Element's availability is
+ * not known. (like missing GPU or something...)
+ *
+ * @param {string} pipeline Pipeline
+ * @param {Map<string, boolean>} availabilityMap Availability Map to cache result.
+ * @returns {boolean} Whether the pipeline is available.
+ */
+function checkPipeline(pipeline, availabilityMap) {
+    let words = pipeline.split(/\s+/);
+    let elements = words.filter((word) => {
+        return ! (
+            word.includes(".") || // object reference (ex. "mux.")
+            word.includes("=") || // property (ex. "name=value")
+            word.includes("!")    // element separator '!'
+        );
+    });
+
+    return elements.every((elem) => {
+        if (availabilityMap.has(elem)) {
+            return availabilityMap[elem];
+        } else {
+            let availability = Gst.ElementFactory.find(elem) !== null;
+            availabilityMap[elem] = availability;
+            return availability;
+        }
+    });
+}
+
+/**
+ * Check that configure can be created properly.
+ *
+ * @param {Configure} configure Configure.
+ * @param {Map<string, boolean>} availabilityMap Availability Map to cache result.
+ * @returns {boolean} Whether the configure is available to use.
+ */
+function checkConfigure(configure, availabilityMap) {
+    return  checkPipeline(configure.videoPrepPipeline, availabilityMap) &&
+            checkPipeline(configure.videoPipeline, availabilityMap) &&
+            checkPipeline(configure.audioPipeline, availabilityMap) &&
+            checkPipeline(configure.muxer, availabilityMap);
+}
+
 export default class ScreencastExtraFeature extends Extension {
     enable() {
         // Internal variables.
+
+        /** @type {Configure[]} */
+        this._configures = CONFIGURES;
+
         this._configureIndex = 0;
 
         // Reference from Main UI
@@ -163,9 +221,38 @@ export default class ScreencastExtraFeature extends Extension {
 
         this._screencastProxy.ScreencastAsync = this._screencastAsync.bind(this);
         this._screencastProxy.ScreencastAreaAsync = this._screencastAreaAsync.bind(this);
+
+        // Delayed initialization, to prevent lock-up on GStreamer Initialization.
+        this._initSource = GLib.timeout_add(GLib.PRIORITY_LOW, INITIAL_WAIT_TIME, () => {
+            try {
+                let needGstInit = ! Gst.is_initialized();
+                if (needGstInit) Gst.init_check([]);
+
+                let availabilityMap = new Map();
+
+                this._configures = CONFIGURES.filter((conf) => checkConfigure(conf, availabilityMap));
+                this._configureIndex = 0;
+
+                if (needGstInit) Gst.deinit();
+
+                console.log("Using following configure...");
+                for (let conf of this._configures) {
+                    console.log(`- ${conf.id}`)
+                }
+
+                return GLib.SOURCE_REMOVE;
+            } catch (e) {
+                console.log(`Gstreamer init failed: ${e}`);
+                return GLib.SOURCE_REMOVE;
+            }
+        });
     }
 
     disable() {
+        // Remove source of delayed initialization.
+        GLib.Source.remove(this._initSource);
+        this._initSource = null;
+
         // Revert Monkey patch
         if (this._screencastProxy) {
             if (this._origProxyScreencast) {
@@ -205,6 +292,9 @@ export default class ScreencastExtraFeature extends Extension {
         if (this._screenshotUI) {
             this._screenshotUI = null;
         }
+
+        // Internal variables
+        this._configures = null;
     }
 
     // Privates
@@ -219,8 +309,8 @@ export default class ScreencastExtraFeature extends Extension {
     /// returns: (boolean, string): Success and the result filename with extension.
     async _screencastAsync(filename, options) {
         options['framerate'] = new GLib.Variant('i', this._partFramerate.getSelectedItem());
-        while (this._configureIndex <= configures.length) {
-            let configure = configures[this._configureIndex];
+        while (this._configureIndex <= this._configures.length) {
+            let configure = this._configures[this._configureIndex];
 
             // TODO: Get whole presented size.
             let pipeline = this._makePipelineString(configure, global.screen_width, global.screen_height);
@@ -261,8 +351,8 @@ export default class ScreencastExtraFeature extends Extension {
     /// returns: (boolean, string): Success and the result filename with extension.
     async _screencastAreaAsync(x, y, w, h, filename, options) {
         options['framerate'] = new GLib.Variant('i', this._partFramerate.getSelectedItem());
-        while (this._configureIndex <= configures.length) {
-            let configure = configures[this._configureIndex];
+        while (this._configureIndex <= this._configures.length) {
+            let configure = this._configures[this._configureIndex];
 
             let pipeline = this._makePipelineString(configure, w, h);
             options['pipeline'] = new GLib.Variant('s', pipeline);
