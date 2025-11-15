@@ -77,6 +77,7 @@ export class PartAudio extends PartBase.PartUI {
             {
                 style_class: 'screenshot-ui-type-button',
                 toggle_mode: true,
+                x_align: Clutter.ActorAlign.FILL,
                 reactive: false
             }
         );
@@ -87,6 +88,7 @@ export class PartAudio extends PartBase.PartUI {
             {
                 style_class: 'screenshot-ui-type-button',
                 toggle_mode: true,
+                x_align: Clutter.ActorAlign.FILL,
                 reactive: false
             }
         );
