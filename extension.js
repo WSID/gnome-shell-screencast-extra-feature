@@ -54,7 +54,7 @@ const AAC_PIPELINE = "avenc_aac ! queue"
 
 const HWENC_DMABUF_PREP_PIPELINE = "vapostproc";
 
-const SWENC_DMABUF_PREP_PIPELINE = "glupload ! glcolorscale ! glcolorconvert ! gldownload ! queue";
+const SWENC_DMABUF_PREP_PIPELINE = "glupload ! glcolorconvert ! glcolorscale ! glcolorconvert ! gldownload ! queue";
 
 const SWENC_MEMFD_PREP_PIPELINE = "videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T ! videoscale ! queue"
 
