@@ -173,10 +173,10 @@ function checkPipeline(pipeline, availabilityMap) {
 
     return elements.every((elem) => {
         if (availabilityMap.has(elem)) {
-            return availabilityMap[elem];
+            return availabilityMap.get(elem);
         } else {
             let availability = Gst.ElementFactory.find(elem) !== null;
-            availabilityMap[elem] = availability;
+            availabilityMap.set(elem, availability);
             return availability;
         }
     });
