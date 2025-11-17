@@ -54,7 +54,10 @@ const AAC_PIPELINE = "avenc_aac ! queue"
 
 const HWENC_DMABUF_PREP_PIPELINE = "vapostproc";
 
-const SWENC_DMABUF_PREP_PIPELINE = "glupload ! glcolorconvert ! glcolorscale ! glcolorconvert ! gldownload ! queue";
+const SWENC_DMABUF_PREP_PIPELINE = "glupload ! glcolorconvert ! gldownload ! queue";
+
+  // NOTE: To use glcolorscale, we have to color convert to RGBA.
+const SWENC_DMABUF_PREP_DOWNSIZE_PIPELINE = "glupload ! glcolorconvert ! glcolorscale ! glcolorconvert ! gldownload ! queue";
 
 const SWENC_MEMFD_PREP_PIPELINE = "videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T ! videoscale ! queue"
 
@@ -63,7 +66,8 @@ const SWENC_MEMFD_PREP_PIPELINE = "videoconvert chroma-mode=none dither=none mat
  *
  * @typedef {object} Configure
  * @property {string} id Name of configuration.
- * @property {string} videoPrepPipeline Video Preparation pipeline. (convert & resize)
+ * @property {string} videoPrepPipeline Video Preparation pipeline.
+ * @property {?string} videoPrepDownsizePipeline Video Preparation pipeline for downsize, or null to use #videoPrepPipeline.
  * @property {string} videoPipeline Video encode pipeline.
  * @property {string} audioPipeline Audio encode pipeline.
  * @property {string} muxer Muxer pipeline.
@@ -79,8 +83,22 @@ const SWENC_MEMFD_PREP_PIPELINE = "videoconvert chroma-mode=none dither=none mat
  */
 const CONFIGURES = [
   {
+    id: "hwenc-dmabuf-h264-nvenc",
+    videoPrepPipeline: "glupload ! glcolorconvert ! glcolorscale",
+    videoPrepDownsizePipeline: "cudaupload",  // If we don't resize, prefer CUDA to GL
+    videoPipeline: [
+        "nvh264enc",
+        "queue",
+        "h264parse"
+    ].join(" ! "),
+    audioPipeline: AAC_PIPELINE,
+    muxer: "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
+    extension: "mp4"
+  },
+  {
     id: "hwenc-dmabuf-h264-vaapi-lp",
     videoPrepPipeline: HWENC_DMABUF_PREP_PIPELINE,
+    videoPrepDownsizePipeline: null,
     videoPipeline: [
         "vah264lpenc",
         "queue",
@@ -93,6 +111,7 @@ const CONFIGURES = [
   {
     id: "hwenc-dmabuf-h264-vaapi",
     videoPrepPipeline: HWENC_DMABUF_PREP_PIPELINE,
+    videoPrepDownsizePipeline: null,
     videoPipeline: [
         "vah264enc",
         "queue",
@@ -105,6 +124,7 @@ const CONFIGURES = [
   {
     id: "swenc-dmabuf-h264-openh264",
     videoPrepPipeline: SWENC_DMABUF_PREP_PIPELINE,
+    videoPrepDownsizePipeline: SWENC_DMABUF_PREP_DOWNSIZE_PIPELINE,
     videoPipeline: [
         "openh264enc deblocking=off background-detection=false complexity=low adaptive-quantization=false qp-max=26 qp-min=26 multi-thread=%T slice-mode=auto",
         "queue",
@@ -117,6 +137,7 @@ const CONFIGURES = [
   {
     id: "swenc-memfd-h264-openh264",
     videoPrepPipeline: SWENC_MEMFD_PREP_PIPELINE,
+    videoPrepDownsizePipeline: null,
     videoPipeline: [
         "openh264enc deblocking=off background-detection=false complexity=low adaptive-quantization=false qp-max=26 qp-min=26 multi-thread=%T slice-mode=auto",
         "queue",
@@ -129,6 +150,7 @@ const CONFIGURES = [
   {
     id: "swenc-dmabuf-vp8-vp8enc",
     videoPrepPipeline: SWENC_DMABUF_PREP_PIPELINE,
+    videoPrepDownsizePipeline: SWENC_DMABUF_PREP_DOWNSIZE_PIPELINE,
     videoPipeline: [
         "vp8enc cpu-used=16 max-quantizer=17 deadline=1 keyframe-mode=disabled threads=%T static-threshold=1000 buffer-size=20000",
         "queue",
@@ -140,6 +162,7 @@ const CONFIGURES = [
   {
     id: "swenc-memfd-vp8-vp8enc",
     videoPrepPipeline: SWENC_MEMFD_PREP_PIPELINE,
+    videoPrepDownsizePipeline: null,
     videoPipeline: [
       'vp8enc cpu-used=16 max-quantizer=17 deadline=1 keyframe-mode=disabled threads=%T static-threshold=1000 buffer-size=20000',
       'queue'
@@ -324,8 +347,17 @@ export default class ScreencastExtraFeature extends Extension {
                 return [success, filepath];
             } catch (e) {
                 this._configureIndex++;
+
+                var videoPrep = configure.videoPrepPipeline;
+                let downsizeRatio = this._partDownsize.getSelectedItem();
+                if (downsizeRatio != 1.00) {
+                    videoPrep =
+                        configure.videoPrepDownsizePipeline ||
+                        configure.videoPrepPipeline;
+                }
+
                 console.log(`Tried configure [${this._configureIndex}] ${configure.id}`);
-                console.log(`- VIDEO_PREP: ${configure.videoPrepPipeline}`);
+                console.log(`- VIDEO_PREP: ${videoPrep}`);
                 console.log(`- VIDEO: ${configure.videoPipeline}`);
                 console.log(`- AUDIO: ${configure.audioPipeline}`);
                 console.log(`- MUXER: ${configure.muxer}`);
@@ -365,8 +397,17 @@ export default class ScreencastExtraFeature extends Extension {
                 return [success, filepath];
             } catch (e) {
                 this._configureIndex++;
+
+                var videoPrep = configure.videoPrepPipeline;
+                let downsizeRatio = this._partDownsize.getSelectedItem();
+                if (downsizeRatio != 1.00) {
+                    videoPrep =
+                        configure.videoPrepDownsizePipeline ||
+                        configure.videoPrepPipeline;
+                }
+
                 console.log(`Tried configure [${this._configureIndex}] ${configure.id}`);
-                console.log(`- VIDEO_PREP: ${configure.videoPrepPipeline}`);
+                console.log(`- VIDEO_PREP: ${videoPrep}`);
                 console.log(`- VIDEO: ${configure.videoPipeline}`);
                 console.log(`- AUDIO: ${configure.audioPipeline}`);
                 console.log(`- MUXER: ${configure.muxer}`);
@@ -415,18 +456,23 @@ export default class ScreencastExtraFeature extends Extension {
      */
     _makePipelineString(configure, width, height) {
         var videoSeg = null;
-        let videoPrep = configure.videoPrepPipeline;
         let video = configure.videoPipeline;
         let muxer = configure.muxer;
 
         let downsizeRatio = this._partDownsize.getSelectedItem();
         if (downsizeRatio != 1.00) {
+            let videoPrep =
+                configure.videoPrepDownsizePipeline ||
+                configure.videoPrepPipeline;
+
             let downsizeWidth = Math.floor(width * downsizeRatio);
             let downsizeHeight = Math.floor(height * downsizeRatio);
-            let downsizeCap = `video/x-raw,width=${downsizeWidth},height=${downsizeHeight}`
+            let downsizeCap = `video/x-raw(ANY),width=${downsizeWidth},height=${downsizeHeight}`
 
             videoSeg = `${videoPrep} ! ${downsizeCap} ! ${video} ! ${muxer} name=mux`;
         } else {
+            let videoPrep = configure.videoPrepPipeline;
+
             videoSeg = `${videoPrep} ! ${video} ! ${muxer} name=mux`;
         }
 
