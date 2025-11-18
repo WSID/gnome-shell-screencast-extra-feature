@@ -33,14 +33,6 @@ import * as PartDownsize from './parts/partdownsize.js';
 
 // Some Constants
 
-/**
- * A wait time to initialize GStreamer, to inspect for elements.
- *
- * Lockup may happen if we initialize GStreamer immediately at enable.
- */
-const INITIAL_WAIT_TIME = 1000;
-
-
 // Audio Pipeline Description.
 
 /** A pipeline for audio record, in vorbis. */
@@ -223,9 +215,8 @@ export default class ScreencastExtraFeature extends Extension {
     enable() {
         // Internal variables.
 
-        /** @type {Configure[]} */
-        this._configures = CONFIGURES;
-
+        /** @type {?Configure[]} */
+        this._configures = null;
         this._configureIndex = 0;
 
         // Reference from Main UI
@@ -244,38 +235,9 @@ export default class ScreencastExtraFeature extends Extension {
 
         this._screencastProxy.ScreencastAsync = this._screencastAsync.bind(this);
         this._screencastProxy.ScreencastAreaAsync = this._screencastAreaAsync.bind(this);
-
-        // Delayed initialization, to prevent lock-up on GStreamer Initialization.
-        this._initSource = GLib.timeout_add(GLib.PRIORITY_LOW, INITIAL_WAIT_TIME, () => {
-            try {
-                let needGstInit = ! Gst.is_initialized();
-                if (needGstInit) Gst.init_check([]);
-
-                let availabilityMap = new Map();
-
-                this._configures = CONFIGURES.filter((conf) => checkConfigure(conf, availabilityMap));
-                this._configureIndex = 0;
-
-                if (needGstInit) Gst.deinit();
-
-                console.log("Using following configure...");
-                for (let conf of this._configures) {
-                    console.log(`- ${conf.id}`)
-                }
-
-                return GLib.SOURCE_REMOVE;
-            } catch (e) {
-                console.log(`Gstreamer init failed: ${e}`);
-                return GLib.SOURCE_REMOVE;
-            }
-        });
     }
 
     disable() {
-        // Remove source of delayed initialization.
-        GLib.Source.remove(this._initSource);
-        this._initSource = null;
-
         // Revert Monkey patch
         if (this._screencastProxy) {
             if (this._origProxyScreencast) {
@@ -331,6 +293,8 @@ export default class ScreencastExtraFeature extends Extension {
     ///
     /// returns: (boolean, string): Success and the result filename with extension.
     async _screencastAsync(filename, options) {
+        this._initConfigure();
+
         options['framerate'] = new GLib.Variant('i', this._partFramerate.getSelectedItem());
         while (this._configureIndex <= this._configures.length) {
             let configure = this._configures[this._configureIndex];
@@ -382,6 +346,8 @@ export default class ScreencastExtraFeature extends Extension {
     ///
     /// returns: (boolean, string): Success and the result filename with extension.
     async _screencastAreaAsync(x, y, w, h, filename, options) {
+        this._initConfigure();
+
         options['framerate'] = new GLib.Variant('i', this._partFramerate.getSelectedItem());
         while (this._configureIndex <= this._configures.length) {
             let configure = this._configures[this._configureIndex];
@@ -417,6 +383,33 @@ export default class ScreencastExtraFeature extends Extension {
 
         // If it reached here, all of pipeline configures are failed.
         throw Error("Tried all configure and failed!");
+    }
+
+    /**
+     * Perform configuration initialization, which is deferred at later.
+     */
+    _initConfigure() {
+        if (this._configures === null) {
+            try {
+                let needGstInit = ! Gst.is_initialized();
+                if (needGstInit) Gst.init_check([]);
+
+                let availabilityMap = new Map();
+
+                this._configures = CONFIGURES.filter((conf) => checkConfigure(conf, availabilityMap));
+                if (needGstInit) Gst.deinit();
+            } catch (e) {
+                console.log(`Gstreamer init failed: ${e}`);
+                console.log(`Fallback to use all configures.`);
+                this._configures = CONFIGURES;
+            }
+            this._configureIndex = 0;
+
+            console.log("Using following configure...");
+            for (let conf of this._configures) {
+                console.log(`- ${conf.id}`)
+            }
+        }
     }
 
     /// Fix file path with wrong extension.
