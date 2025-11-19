@@ -34,10 +34,32 @@ import * as PartBase from "./partbase.js";
 
 let [SHELL_MAJOR, _] = Config.PACKAGE_VERSION.split('.').map(s => Number(s));
 
+/**
+ * A clutter constraint that enforces allocation on pixel grid.
+ *
+ * This is added to resolve issue that buttons are placed on sub-pixel position.
+ */
+const PixelConstraint = GObject.registerClass(
+class PixelConstraint extends Clutter.Constraint {
+    /**
+     * @override
+     * @param {Clutter.Actor} _actor
+     * @param {Clutter.ActorBox} allocation
+     */
+    vfunc_update_allocation(_actor, allocation) {
+        allocation.x1 = Math.ceil(allocation.x1);
+        allocation.y1 = Math.ceil(allocation.y1);
+        allocation.x2 = Math.floor(allocation.x2);
+        allocation.y2 = Math.floor(allocation.y2);
+    }
+});
 
-/// Icon Label Button that used in screen shot UI.
-///
-/// Copied from gnome-shell.
+
+/**
+ * Icon Label Button that used in screen shot UI.
+ *
+ * Copied from gnome-shell.
+ */
 const IconLabelButton = GObject.registerClass(
 class IconLabelButton extends St.Button {
     _init(icon, label, params) {
@@ -72,19 +94,20 @@ export class PartAudio extends PartBase.PartUI {
         
         let iconsDir = dir.get_child("icons");
 
-        // Add UI
+        // Add UI        
         this.desktopAudioButton = new IconLabelButton(
             new Gio.FileIcon({
                 file: iconsDir.get_child("screenshot-ui-speaker-symbolic.svg")
             }),
             gettext("Desktop"),
             {
+                constraints: new PixelConstraint(),
                 style_class: 'screenshot-ui-type-button',
                 toggle_mode: true,
-                x_align: Clutter.ActorAlign.FILL,
                 reactive: false
             }
         );
+        
 
         this.micAudioButton = new IconLabelButton(
             new Gio.FileIcon({
@@ -92,9 +115,9 @@ export class PartAudio extends PartBase.PartUI {
             }),
             gettext("Mic"),
             {
+                constraints: new PixelConstraint(),
                 style_class: 'screenshot-ui-type-button',
                 toggle_mode: true,
-                x_align: Clutter.ActorAlign.FILL,
                 reactive: false
             }
         );
