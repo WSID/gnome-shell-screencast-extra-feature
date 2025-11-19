@@ -224,7 +224,7 @@ export default class ScreencastExtraFeature extends Extension {
         this._screencastProxy = this._screenshotUI._screencastProxy;
 
         // Extension parts.
-        this._partAudio = new PartAudio.PartAudio(this._screenshotUI);
+        this._partAudio = new PartAudio.PartAudio(this._screenshotUI, this.dir);
         this._partFramerate = new PartFramerate.PartFramerate(this._screenshotUI);
         this._partDownsize = new PartDownsize.PartDownsize(this._screenshotUI);
         this._partQuickStop = new PartQuickStop.PartQuickStop(this._screenshotUI);

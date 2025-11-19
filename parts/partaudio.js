@@ -17,8 +17,9 @@
  */
 
 
-import Clutter from 'gi://Clutter'
-import GObject from 'gi://GObject'
+import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
+import GObject from 'gi://GObject';
 import Gvc from 'gi://Gvc';
 import St from 'gi://St';
 
@@ -39,7 +40,7 @@ let [SHELL_MAJOR, _] = Config.PACKAGE_VERSION.split('.').map(s => Number(s));
 /// Copied from gnome-shell.
 const IconLabelButton = GObject.registerClass(
 class IconLabelButton extends St.Button {
-    _init(iconName, label, params) {
+    _init(icon, label, params) {
         super._init(params);
 
         // Option per version
@@ -56,7 +57,7 @@ class IconLabelButton extends St.Button {
         this._container = new St.BoxLayout(containerProps);
         this.set_child(this._container);
 
-        this._container.add_child(new St.Icon({icon_name: iconName}));
+        this._container.add_child(new St.Icon({gicon: icon}));
         this._container.add_child(new St.Label({
             text: label,
             x_align: Clutter.ActorAlign.CENTER,
@@ -65,14 +66,17 @@ class IconLabelButton extends St.Button {
 });
 
 export class PartAudio extends PartBase.PartUI {
-    constructor(screenshotUI) {
+    constructor(screenshotUI, dir) {
         super(screenshotUI);
         this.typeButtonContainer = this.screenshotUI._typeButtonContainer;
-
+        
+        let iconsDir = dir.get_child("icons");
 
         // Add UI
         this.desktopAudioButton = new IconLabelButton(
-            "audio-speakers-symbolic",
+            new Gio.FileIcon({
+                file: iconsDir.get_child("screenshot-ui-speaker-symbolic.svg")
+            }),
             gettext("Desktop"),
             {
                 style_class: 'screenshot-ui-type-button',
@@ -83,7 +87,9 @@ export class PartAudio extends PartBase.PartUI {
         );
 
         this.micAudioButton = new IconLabelButton(
-            "audio-input-microphone-symbolic",
+            new Gio.FileIcon({
+                file: iconsDir.get_child("screenshot-ui-mic-symbolic.svg")
+            }),
             gettext("Mic"),
             {
                 style_class: 'screenshot-ui-type-button',
