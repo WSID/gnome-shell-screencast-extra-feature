@@ -59,6 +59,11 @@ class PixelConstraint extends Clutter.Constraint {
  * Icon Label Button that used in screen shot UI.
  *
  * Copied from gnome-shell.
+ *
+ * Modified to ...
+ *
+ * - To work with various version of St, with slightly different API.
+ * - Use #Gio.Icon instead of icon name, to use our own icon.
  */
 const IconLabelButton = GObject.registerClass(
 class IconLabelButton extends St.Button {
@@ -87,6 +92,12 @@ class IconLabelButton extends St.Button {
     }
 });
 
+/**
+ * Extension part for audio.
+ *
+ * - Provide UI to activate desktop audio and mic audio.
+ * - Provide pipeline description for activated audio sources.
+ */
 export class PartAudio extends PartBase.PartUI {
     constructor(screenshotUI, dir) {
         super(screenshotUI);
@@ -152,19 +163,19 @@ export class PartAudio extends PartBase.PartUI {
         this.mixerSinkChanged = this.mixerControl.connect(
           'default-sink-changed',
           (_object, _id) => {
-            this.updateDesktopAudioButton();
+            this._updateDesktopAudioButton();
           }
         );
 
         this.mixerSrcChanged = this.mixerControl.connect(
           'default-source-changed',
           (_object, _id) => {
-            this.updateMicAudioButton();
+            this._updateMicAudioButton();
           }
         );
 
-        this.updateDesktopAudioButton();
-        this.updateMicAudioButton();
+        this._updateDesktopAudioButton();
+        this._updateMicAudioButton();
     }
 
     /** @override */
@@ -219,11 +230,16 @@ export class PartAudio extends PartBase.PartUI {
 
     /** @override */
     onCastModeSelected(selected) {
-        this.updateDesktopAudioButton();
-        this.updateMicAudioButton();
+        this._updateDesktopAudioButton();
+        this._updateMicAudioButton();
     }
 
-    get_added_audio_input() {
+    /**
+     * Make audio input as pipeline description.
+     *
+     * @returns {?string}
+     */
+    makeAudioInput() {
         var desktopAudioSource = null;
         var desktopAudioChannels = 0;
         if (this.desktopAudioButton.checked) {
@@ -275,12 +291,15 @@ export class PartAudio extends PartBase.PartUI {
         }
     }
 
+    // Privates
 
-    /// Update to changed sink information.
-    ///
-    /// Sink is usually a output device like speaker.
-    updateDesktopAudioButton() {
-        if (! this.getCastModeSelected()) {
+    /**
+     * Update to changed sink information.
+     *
+     * Sink is usually a output device like speaker.
+     */
+    _updateDesktopAudioButton() {
+        if (! this.castModeSelected) {
             this.desktopAudioButton.reactive = false;
         } else {
             let sink = this.mixerControl.get_default_sink();
@@ -298,11 +317,13 @@ export class PartAudio extends PartBase.PartUI {
         }
     }
 
-    /// Update to changed source information.
-    ///
-    /// Source is usually a input device like microphone.
-    updateMicAudioButton() {
-        if (! this.getCastModeSelected()) {
+    /**
+     * Update to changed source information.
+     *
+     * Source is usually a input device like microphone.
+     */
+    _updateMicAudioButton() {
+        if (! this.castModeSelected) {
             this.micAudioButton.reactive = false;
         } else {
             let src = this.mixerControl.get_default_source();

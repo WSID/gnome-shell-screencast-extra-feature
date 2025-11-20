@@ -38,7 +38,7 @@ export class PartQuickStop extends PartBase.PartBase {
 
         // Monkey-patch
         this.origScreenshotUIOpen = this.screenshotUI.open;
-        this.screenshotUI.open = this.screenshotUIOpen.bind(this);
+        this.screenshotUI.open = this._screenshotUIOpen.bind(this);
     }
 
     destroy() {
@@ -53,7 +53,7 @@ export class PartQuickStop extends PartBase.PartBase {
      *
      * @param {number} uiMode A UI Mode.
      */
-    async screenshotUIOpen(uiMode) {
+    async _screenshotUIOpen(uiMode) {
         let isToStop =
             (uiMode === UIMode.SCREENCAST) &&
             this.screenshotUI._screencastInProgress;

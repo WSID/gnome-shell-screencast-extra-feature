@@ -45,7 +45,7 @@ export class PartUI extends PartBase {
     constructor(screenshotUI) {
         super();
 
-        this.castModeSelected = false;
+        this._castModeSelected = false;
 
         this.screenshotUI = screenshotUI;
         this.shotButton = this.screenshotUI._shotButton;
@@ -53,8 +53,8 @@ export class PartUI extends PartBase {
         this.shotButtonNotifyChecked = this.shotButton.connect (
             "notify::checked",
             (_object, _pspec) => {
-                this.castModeSelected = !this.shotButton.checked;
-                this.onCastModeSelected(this.castModeSelected);
+                this._castModeSelected = !this.shotButton.checked;
+                this.onCastModeSelected(this._castModeSelected);
             }
         );
     }
@@ -68,7 +68,7 @@ export class PartUI extends PartBase {
         this.shotButton = null;
         this.screenshotUI = null;
 
-        this.castModeSelected = false;
+        this._castModeSelected = false;
 
         super.destroy();
     }
@@ -87,8 +87,8 @@ export class PartUI extends PartBase {
      *
      * @returns {boolean} Whether the cast mode is selected.
      */
-    getCastModeSelected() {
-        return this.castModeSelected;
+    get castModeSelected() {
+        return this._castModeSelected;
     }
 }
 
@@ -108,14 +108,14 @@ export class PartPopupSelect extends PartUI {
     constructor(screenshotUI, items, selectedItem) {
         super(screenshotUI);
 
-        this.selectedItem = selectedItem;
+        this._selectedItem = selectedItem;
 
         this.showPointerButtonContainer = this.screenshotUI._showPointerButtonContainer;
 
         // Button
         this.button = new St.Button({
             style_class: 'screenshot-ui-show-pointer-button',
-            label: this.makeLabel(this.selectedItem),
+            label: this.makeLabel(this._selectedItem),
             visible: false,
         });
         this.showPointerButtonContainer.insert_child_at_index(this.button, 0);
@@ -134,7 +134,7 @@ export class PartPopupSelect extends PartUI {
             this.popupMenu.addAction (
                 label,
                 () => {
-                    this.selectedItem = item;
+                    this._selectedItem = item;
                     this.button.label = label;
                 }
             )
@@ -169,7 +169,7 @@ export class PartPopupSelect extends PartUI {
             this.showPointerButtonContainer = null;
         }
 
-        this.selectedItem = null;
+        this._selectedItem = null;
 
         super.destroy();
     }
@@ -198,7 +198,7 @@ export class PartPopupSelect extends PartUI {
      *
      * @returns {T} selected item.
      */
-    getSelectedItem () {
-        return this.selectedItem;
+    get selectedItem () {
+        return this._selectedItem;
     }
 }

@@ -167,6 +167,34 @@ const CONFIGURES = [
 
 
 /**
+ * Fix file path with wrong extension.
+ *
+ * Usually to fix '.unknown' file path.
+ *
+ * @param {string} filepath A filepath, with worng extension.
+ * @param {string} extension Desired extension of the file.
+ * @returns {string} The new file path.
+ */
+function fixFilePath(filepath, extension) {
+    console.log(`Fix file path: ${filepath}`);
+
+    // Split extension from file name
+    var newFileStem = filepath;
+    let lastPoint = filepath.lastIndexOf('.')
+    if (lastPoint !== -1) {
+        newFileStem = filepath.substring(0, lastPoint);
+    }
+    let newFilepath = `${newFileStem}.${extension}`;
+
+    console.log(`- Into : ${newFilepath}`);
+
+    // Rename the file. (using GLib.)
+    GLib.rename(filepath, newFilepath);
+    return newFilepath;
+}
+
+
+/**
  * Check that pipeline can be created properly.
  *
  * NOTE: This just checks existence of elements. Element's availability is
@@ -221,7 +249,6 @@ export default class ScreencastExtraFeature extends Extension {
 
         // Reference from Main UI
         this._screenshotUI = Main.screenshotUI;
-        this._screencastProxy = this._screenshotUI._screencastProxy;
 
         // Extension parts.
         this._partAudio = new PartAudio.PartAudio(this._screenshotUI, this.dir);
@@ -230,6 +257,7 @@ export default class ScreencastExtraFeature extends Extension {
         this._partQuickStop = new PartQuickStop.PartQuickStop(this._screenshotUI);
 
         // Monkey patch
+        this._screencastProxy = this._screenshotUI._screencastProxy;
         this._origProxyScreencast = this._screencastProxy.ScreencastAsync;
         this._origProxyScreencastArea = this._screencastProxy.ScreencastAreaAsync;
 
@@ -253,7 +281,7 @@ export default class ScreencastExtraFeature extends Extension {
             this._screencastProxy = null;
         }
 
-        // Revert UI
+        // Destroy parts.
         if (this._partAudio) {
             this._partAudio.destroy();
             this._partAudio = null;
@@ -274,9 +302,7 @@ export default class ScreencastExtraFeature extends Extension {
             this._partQuickStop = null;
         }
 
-        if (this._screenshotUI) {
-            this._screenshotUI = null;
-        }
+        this._screenshotUI = null;
 
         // Internal variables
         this._configures = null;
@@ -284,89 +310,79 @@ export default class ScreencastExtraFeature extends Extension {
 
     // Privates
 
-    /// Monkey patch for screencast async.
-    ///
-    /// Modify option for our configuration.
-    ///
-    /// filename: string: File name without extension.
-    /// options: object: Options for screen cast.
-    ///
-    /// returns: (boolean, string): Success and the result filename with extension.
+    /**
+     * Monkey patch for screencast async.
+     *
+     * Modify option for our configuration.
+     *
+     * @param {string} filename File name without extension.
+     * @param {object} options Options for screen cast.
+     * @returns {[boolean, string]} Success and the result filename with extension.
+     */
     async _screencastAsync(filename, options) {
-        this._initConfigure();
-
-        options['framerate'] = new GLib.Variant('i', this._partFramerate.getSelectedItem());
-        while (this._configureIndex <= this._configures.length) {
-            let configure = this._configures[this._configureIndex];
-
-            // TODO: Get whole presented size.
-            let pipeline = this._makePipelineString(configure, global.screen_width, global.screen_height);
-            options['pipeline'] = new GLib.Variant('s', pipeline);
-
-            try {
-                var [success, filepath] = await this._origProxyScreencast.call(this._screencastProxy, filename, options);
-                if (success) {
-                    filepath = this._fixFilePath(filepath, configure.extension);
-                }
-                return [success, filepath];
-            } catch (e) {
-                this._configureIndex++;
-
-                var videoPrep = configure.videoPrepPipeline;
-                let downsizeRatio = this._partDownsize.getSelectedItem();
-                if (downsizeRatio != 1.00) {
-                    videoPrep =
-                        configure.videoPrepDownsizePipeline ||
-                        configure.videoPrepPipeline;
-                }
-
-                console.log(`Tried configure [${this._configureIndex}] ${configure.id}`);
-                console.log(`- VIDEO_PREP: ${videoPrep}`);
-                console.log(`- VIDEO: ${configure.videoPipeline}`);
-                console.log(`- AUDIO: ${configure.audioPipeline}`);
-                console.log(`- MUXER: ${configure.muxer}`);
-                console.log(`- ERROR: ${e}`);
-            }
-        }
-
-        // If it reached here, all of pipeline configures are failed.
-        throw Error("Tried all configure and failed!");
+        return this._screencastCommonAsync (
+            global.screen_width, global.screen_height, options,
+            this._origProxyScreencast.bind(this._screencastProxy, filename)
+        );
     }
 
-    /// Monkey patch for screencast async.
-    ///
-    /// Modify option for our configuration.
-    ///
-    /// x: number: left coordinate of area.
-    /// y: number: top coordinate or area.
-    /// w: number: Width of area.
-    /// h: number: Height of area.
-    /// filename: string: File name without extension.
-    /// options: object: Options for screen cast.
-    ///
-    /// returns: (boolean, string): Success and the result filename with extension.
+    /**
+     * Monkey patch for screencast async.
+     *
+     * Modify option for our configuration.
+     *
+     * @param {number} x left coordinate of area.
+     * @param {number} y top coordinate or area.
+     * @param {number} w Width of area.
+     * @param {number} h Height of area.
+     * @param {string} filename File name without extension.
+     * @param {object} options Options for screen cast.
+     * @returns {[boolean, string]} Success and the result filename with extension.
+     */
     async _screencastAreaAsync(x, y, w, h, filename, options) {
+        return this._screencastCommonAsync (w, h, options,
+            this._origProxyScreencastArea.bind(this._screencastProxy, x, y, w, h, filename)
+        );
+    }
+
+    /**
+     * Common pre-action and post-action for screen cast request.
+     *
+     * - Initialize configure.
+     * - Modify options (framerate, pipeline)
+     * - Fix file name
+     * - Print logs
+     * - Try next configure if failed.
+     *
+     * @param {number} width Width of screen cast area.
+     * @param {number} height Height of screen cast area.
+     * @param {object} options Option for screen cast.
+     * @param {(options: object) => Promise<[boolean, string]>} body
+     *        An async callback that accepts modified option, and result in file
+     *        path and success.
+     * @returns {[boolean, string]} Result of body, with fixed file path.
+     */
+    async _screencastCommonAsync(width, height, options, body) {
         this._initConfigure();
 
-        options['framerate'] = new GLib.Variant('i', this._partFramerate.getSelectedItem());
+        options['framerate'] = new GLib.Variant('i', this._partFramerate.selectedItem);
         while (this._configureIndex <= this._configures.length) {
             let configure = this._configures[this._configureIndex];
 
-            let pipeline = this._makePipelineString(configure, w, h);
+            let pipeline = this._makePipelineString(configure, width, height);
             options['pipeline'] = new GLib.Variant('s', pipeline);
 
             try {
-                var [success, filepath] = await this._origProxyScreencastArea.call(this._screencastProxy, x, y, w, h, filename, options);
+                var [success, filepath] = await body(options);
                 if (success) {
-                    filepath = this._fixFilePath(filepath, configure.extension);
+                    filepath = fixFilePath(filepath, configure.extension);
                 }
                 return [success, filepath];
             } catch (e) {
                 this._configureIndex++;
 
                 var videoPrep = configure.videoPrepPipeline;
-                let downsizeRatio = this._partDownsize.getSelectedItem();
-                if (downsizeRatio != 1.00) {
+                if (this._partDownsize.selectedItem != 1.00) {
                     videoPrep =
                         configure.videoPrepDownsizePipeline ||
                         configure.videoPrepPipeline;
@@ -386,7 +402,7 @@ export default class ScreencastExtraFeature extends Extension {
     }
 
     /**
-     * Perform configuration initialization, which is deferred at later.
+     * Perform configuration initialization, which is supposed to be deferred at later.
      */
     _initConfigure() {
         if (this._configures === null) {
@@ -412,39 +428,12 @@ export default class ScreencastExtraFeature extends Extension {
         }
     }
 
-    /// Fix file path with wrong extension.
-    ///
-    /// Usually to fix '.unknown' file path.
-    ///
-    /// filepath: string: A filepath, with worng extension.
-    /// extension: string: Desired extension of the file.
-    ///
-    /// returns: string: The new file path.
-    _fixFilePath(filepath, extension) {
-        console.log(`Fix file path: ${filepath}`);
-
-        // Split extension from file name
-        var newFileStem = filepath;
-        let lastPoint = filepath.lastIndexOf('.')
-        if (lastPoint !== -1) {
-            newFileStem = filepath.substring(0, lastPoint);
-        }
-        let newFilepath = `${newFileStem}.${extension}`;
-
-        console.log(`- Into : ${newFilepath}`);
-
-        // Rename the file. (using GLib.)
-        GLib.rename(filepath, newFilepath);
-        return newFilepath;
-    }
-
     /**
      * Make pipeline string for given set of pipeline descriptions.
      *
      * @param {Configure} configure A configure to form pipeline string.
      * @param {number} width Width of screen cast.
      * @param {number} height Height of screen cast.
-     *
      * @returns {string} A combined pipeline description.
      */
     _makePipelineString(configure, width, height) {
@@ -452,7 +441,7 @@ export default class ScreencastExtraFeature extends Extension {
         let video = configure.videoPipeline;
         let muxer = configure.muxer;
 
-        let downsizeRatio = this._partDownsize.getSelectedItem();
+        let downsizeRatio = this._partDownsize.selectedItem;
         if (downsizeRatio != 1.00) {
             let videoPrep =
                 configure.videoPrepDownsizePipeline ||
@@ -468,8 +457,7 @@ export default class ScreencastExtraFeature extends Extension {
 
             videoSeg = `${videoPrep} ! ${video} ! ${muxer} name=mux`;
         }
-
-        let audioSource = this._partAudio.get_added_audio_input();
+        let audioSource = this._partAudio.makeAudioInput();
         if (audioSource === null) {
 
             // If we don't use audio, we can just use video segment only.
