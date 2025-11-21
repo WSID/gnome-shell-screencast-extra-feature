@@ -18,39 +18,68 @@
 
 // GIR imports
 
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import Gst from 'gi://Gst';
 
 // Shell imports
 
-import {Extension, gettext} from 'resource:///org/gnome/shell/extensions/extension.js';
+import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import * as PartAudio from "./parts/partaudio.js"
 import * as PartFramerate from "./parts/partframerate.js"
+import * as PartQuickStop from "./parts/partquickstop.js"
+import * as PartDownsize from './parts/partdownsize.js';
 
 // Some Constants
 
-/// A pipeline for audio record, in vorbis.
+// Audio Pipeline Description.
+
+/** A pipeline for audio record, in vorbis. */
 const VORBIS_PIPELINE = "vorbisenc ! queue";
 
-/// A pipeline for audio record, in aac.
+/** A pipeline for audio record, in aac. */
 const AAC_PIPELINE = "avenc_aac ! queue"
 
-/// Configuration for pipeline.
-/// video pipelines are copied from gnome-shell screencast service.
-/// They would be probably in separated service, so I cannot monkey-patch on it.
-///
-/// It is array of objects.
-/// - id: Name of configuration.
-/// - videoPipeline: Video Pipeline.
-/// - audioPipeline: Audio Pipeline.
-/// - muxer: A muxer to mux video and audio.
-/// - extension: Extension of the screencast file.
-const configures = [
+
+// Video conversion and resize.
+
+const HWENC_DMABUF_PREP_PIPELINE = "vapostproc";
+
+const SWENC_DMABUF_PREP_PIPELINE = "glupload ! glcolorconvert ! gldownload ! queue";
+
+  // NOTE: To use glcolorscale, we have to color convert to RGBA.
+const SWENC_DMABUF_PREP_DOWNSIZE_PIPELINE = "glupload ! glcolorconvert ! glcolorscale ! glcolorconvert ! gldownload ! queue";
+
+const SWENC_MEMFD_PREP_PIPELINE = "videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T ! videoscale ! queue"
+
+/**
+ * Configuration for pipeline.
+ *
+ * @typedef {object} Configure
+ * @property {string} id Name of configuration.
+ * @property {string} videoPrepPipeline Video Preparation pipeline.
+ * @property {?string} videoPrepDownsizePipeline Video Preparation pipeline for downsize, or null to use #videoPrepPipeline.
+ * @property {string} videoPipeline Video encode pipeline.
+ * @property {string} audioPipeline Audio encode pipeline.
+ * @property {string} muxer Muxer pipeline.
+ * @property {string} extension Extension of file name.
+ */
+
+/**
+ * Configuration for pipeline.
+ * video pipelines are copied from gnome-shell screencast service.
+ * They would be probably in separated service, so I cannot monkey-patch on it.
+ *
+ * @type {Configure[]}
+ */
+const CONFIGURES = [
   {
     id: "hwenc-dmabuf-h264-vaapi-lp",
+    videoPrepPipeline: HWENC_DMABUF_PREP_PIPELINE,
+    videoPrepDownsizePipeline: null,
     videoPipeline: [
-        "vapostproc",
         "vah264lpenc",
         "queue",
         "h264parse"
@@ -61,8 +90,9 @@ const configures = [
   },
   {
     id: "hwenc-dmabuf-h264-vaapi",
+    videoPrepPipeline: HWENC_DMABUF_PREP_PIPELINE,
+    videoPrepDownsizePipeline: null,
     videoPipeline: [
-        "vapostproc",
         "vah264enc",
         "queue",
         "h264parse"
@@ -73,8 +103,9 @@ const configures = [
   },
   {
     id: "swenc-dmabuf-h264-openh264",
+    videoPrepPipeline: SWENC_DMABUF_PREP_PIPELINE,
+    videoPrepDownsizePipeline: SWENC_DMABUF_PREP_DOWNSIZE_PIPELINE,
     videoPipeline: [
-        "glupload ! glcolorconvert ! gldownload ! queue",
         "openh264enc deblocking=off background-detection=false complexity=low adaptive-quantization=false qp-max=26 qp-min=26 multi-thread=%T slice-mode=auto",
         "queue",
         "h264parse"
@@ -85,9 +116,9 @@ const configures = [
   },
   {
     id: "swenc-memfd-h264-openh264",
+    videoPrepPipeline: SWENC_MEMFD_PREP_PIPELINE,
+    videoPrepDownsizePipeline: null,
     videoPipeline: [
-        "videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T",
-        "queue",
         "openh264enc deblocking=off background-detection=false complexity=low adaptive-quantization=false qp-max=26 qp-min=26 multi-thread=%T slice-mode=auto",
         "queue",
         "h264parse"
@@ -98,8 +129,9 @@ const configures = [
   },
   {
     id: "swenc-dmabuf-vp8-vp8enc",
+    videoPrepPipeline: SWENC_DMABUF_PREP_PIPELINE,
+    videoPrepDownsizePipeline: SWENC_DMABUF_PREP_DOWNSIZE_PIPELINE,
     videoPipeline: [
-        "glupload ! glcolorconvert ! gldownload ! queue",
         "vp8enc cpu-used=16 max-quantizer=17 deadline=1 keyframe-mode=disabled threads=%T static-threshold=1000 buffer-size=20000",
         "queue",
     ].join(" ! "),
@@ -109,9 +141,9 @@ const configures = [
   },
   {
     id: "swenc-memfd-vp8-vp8enc",
+    videoPrepPipeline: SWENC_MEMFD_PREP_PIPELINE,
+    videoPrepDownsizePipeline: null,
     videoPipeline: [
-      'videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T',
-      'queue',
       'vp8enc cpu-used=16 max-quantizer=17 deadline=1 keyframe-mode=disabled threads=%T static-threshold=1000 buffer-size=20000',
       'queue'
     ].join(" ! "),
@@ -121,45 +153,144 @@ const configures = [
   }
 ];
 
+
+/**
+ * Fix file path with wrong extension.
+ *
+ * Usually to fix '.unknown' file path.
+ *
+ * @param {string} filepath A filepath, with worng extension.
+ * @param {string} extension Desired extension of the file.
+ * @returns {string} The new file path.
+ */
+function fixFilePath(filepath, extension) {
+    console.log(`Fix file path: ${filepath}`);
+
+    // Split extension from file name
+    var newFileStem = filepath;
+    let lastPoint = filepath.lastIndexOf('.')
+    if (lastPoint !== -1) {
+        newFileStem = filepath.substring(0, lastPoint);
+    }
+    let newFilepath = `${newFileStem}.${extension}`;
+
+    console.log(`- Into : ${newFilepath}`);
+
+    // Rename the file. (using GLib.)
+    GLib.rename(filepath, newFilepath);
+    return newFilepath;
+}
+
+/**
+ * Check that element exists.
+ *
+ * NOTE: This just checks existence of elements. Element's availability is
+ * not known. (like missing GPU or something...)
+ *
+ * NOTE: This launches extenral process `gst-inspect-1.0 --exists ${element}`
+ *   The extension used to use GStreamer, but sometimes Gst.init(...) in
+ *   extension would freeze up whole gnome-shell.
+ *
+ * @param {string} element Element
+ * @returns {Promise<boolean>} Whether the element is available.
+ */
+async function checkElement(element) {
+    return new Promise ((resolve) => {
+        let sub = new Gio.Subprocess({
+            argv: ["gst-inspect-1.0", "--exists", element],
+            flags: Gio.SubprocessFlags.NONE
+        });
+        sub.init(null);
+
+        sub.wait_async(null, (src, result) => {
+            src.wait_finish(result);
+            resolve(src.get_exit_status() == 0);
+        });
+    });
+}
+
+
+/**
+ * Check that pipeline can be created properly.
+ *
+ * NOTE: This just checks existence of elements. Element's availability is
+ * not known. (like missing GPU or something...)
+ *
+ * @param {string} pipeline Pipeline
+ * @param {Map<string, Promise<boolean>>} availabilityMap Availability Map to cache result.
+ * @returns {Promise<boolean>} Whether the pipeline is available.
+ */
+async function checkPipeline(pipeline, availabilityMap) {
+    let words = pipeline.split(/\s+/);
+    let elements = words.filter((word) => {
+        return ! (
+            word.includes(".") || // object reference (ex. "mux.")
+            word.includes("=") || // property (ex. "name=value")
+            word.includes("!")    // element separator '!'
+        );
+    });
+
+    let promises = elements.map ((elem) => {
+        if (availabilityMap.has(elem)) {
+            return availabilityMap.get(elem);
+        } else {
+            let availability = checkElement(elem);
+            availabilityMap.set(elem, availability);
+            return availability;
+        }
+    });
+
+    let results = await Promise.all(promises);
+
+    return results.every(res => res);
+}
+
+/**
+ * Check that configure can be created properly.
+ *
+ * @param {Configure} configure Configure.
+ * @param {Map<string, Promise<boolean>>} availabilityMap Availability Map to cache result.
+ * @returns {Promise<boolean>} Whether the configure is available to use.
+ */
+async function checkConfigure(configure, availabilityMap) {
+    let promises = [
+        checkPipeline(configure.videoPrepPipeline, availabilityMap),
+        checkPipeline(configure.videoPipeline, availabilityMap),
+        checkPipeline(configure.audioPipeline, availabilityMap),
+        checkPipeline(configure.muxer, availabilityMap)
+    ];
+
+    let results = await Promise.all(promises);
+
+    return results.every(res => res);
+}
+
 export default class ScreencastExtraFeature extends Extension {
     enable() {
         // Internal variables.
+
+        /** @type {?Configure[]} */
+        this._configures = null;
         this._configureIndex = 0;
-        this._optionFramerate = 30;
 
         // Reference from Main UI
         this._screenshotUI = Main.screenshotUI;
-        this._showPointerButtonContainer = this._screenshotUI._showPointerButtonContainer;
-        this._shotButton = this._screenshotUI._shotButton;
-        this._typeButtonContainer = this._screenshotUI._typeButtonContainer;
-        this._screencastProxy = this._screenshotUI._screencastProxy;
 
         // Extension parts.
-        this._partAudio = new PartAudio.PartAudio(
-            this._screenshotUI,
-            this._typeButtonContainer
-        );
-
-        this._partFramerate = new PartFramerate.PartFramerate(
-            this._screenshotUI,
-            this._showPointerButtonContainer
-        );
-
-        // Connect to signals.
-        this._shotButtonNotifyChecked = this._shotButton.connect (
-          'notify::checked',
-          (_object, _pspec) => {
-              this._partAudio.set_enabled(!this._shotButton.checked);
-              this._partFramerate.set_enabled(!this._shotButton.checked);
-          }
-        );
+        this._partAudio = new PartAudio.PartAudio(this._screenshotUI, this.dir);
+        this._partFramerate = new PartFramerate.PartFramerate(this._screenshotUI);
+        this._partDownsize = new PartDownsize.PartDownsize(this._screenshotUI);
+        this._partQuickStop = new PartQuickStop.PartQuickStop(this._screenshotUI);
 
         // Monkey patch
+        this._screencastProxy = this._screenshotUI._screencastProxy;
         this._origProxyScreencast = this._screencastProxy.ScreencastAsync;
         this._origProxyScreencastArea = this._screencastProxy.ScreencastAreaAsync;
 
         this._screencastProxy.ScreencastAsync = this._screencastAsync.bind(this);
         this._screencastProxy.ScreencastAreaAsync = this._screencastAreaAsync.bind(this);
+
+        this._initConfigure();
     }
 
     disable() {
@@ -178,15 +309,7 @@ export default class ScreencastExtraFeature extends Extension {
             this._screencastProxy = null;
         }
 
-        // Revert UI
-        if (this._shotButton) {
-            if (this._shotButtonNotifyChecked) {
-                this._shotButton.disconnect(this._shotButtonNotifyChecked);
-                this._shotButtonNotifyChecked = null;
-            }
-            this._shotButton = null;
-        }
-
+        // Destroy parts.
         if (this._partAudio) {
             this._partAudio.destroy();
             this._partAudio = null;
@@ -197,93 +320,102 @@ export default class ScreencastExtraFeature extends Extension {
             this._partFramerate = null;
         }
 
-
-        if (this._screenshotUI) {
-            this._screenshotUI = null;
+        if (this._partDownsize) {
+            this._partDownsize.destroy();
+            this._partDownsize = null;
         }
+
+        if (this._partQuickStop) {
+            this._partQuickStop.destroy();
+            this._partQuickStop = null;
+        }
+
+        this._screenshotUI = null;
+
+        // Internal variables
+        this._configures = null;
     }
 
     // Privates
 
-    /// Monkey patch for screencast async.
-    ///
-    /// Modify option for our configuration.
-    ///
-    /// filename: string: File name without extension.
-    /// options: object: Options for screen cast.
-    ///
-    /// returns: (boolean, string): Success and the result filename with extension.
+    /**
+     * Monkey patch for screencast async.
+     *
+     * Modify option for our configuration.
+     *
+     * @param {string} filename File name without extension.
+     * @param {object} options Options for screen cast.
+     * @returns {[boolean, string]} Success and the result filename with extension.
+     */
     async _screencastAsync(filename, options) {
-        options['framerate'] = new GLib.Variant('i', this._partFramerate.get_framerate());
-        while (this._configureIndex <= configures.length) {
-            let configure = configures[this._configureIndex];
-
-            let pipeline = this._makePipelineString(
-                configure.videoPipeline,
-                configure.audioPipeline,
-                configure.muxer
-            );
-
-            if (pipeline) {
-                options['pipeline'] = new GLib.Variant('s', pipeline);
-            }
-
-            try {
-                var [success, filepath] = await this._origProxyScreencast.call(this._screencastProxy, filename, options);
-                if (success) {
-                    filepath = this._fixFilePath(filepath, configure.extension);
-                }
-                return [success, filepath];
-            } catch (e) {
-                this._configureIndex++;
-                console.log(`Tried configure [${this._configureIndex}] ${configure.id}`);
-                console.log(`- VIDEO: ${configure.videoPipeline}`);
-                console.log(`- AUDIO: ${configure.audioPipeline}`);
-                console.log(`- MUXER: ${configure.muxer}`);
-                console.log(`- ERROR: ${e}`);
-            }
-        }
-
-        // If it reached here, all of pipeline configures are failed.
-        throw Error("Tried all configure and failed!");
+        return this._screencastCommonAsync (
+            global.screen_width, global.screen_height, options,
+            this._origProxyScreencast.bind(this._screencastProxy, filename)
+        );
     }
 
-    /// Monkey patch for screencast async.
-    ///
-    /// Modify option for our configuration.
-    ///
-    /// x: number: left coordinate of area.
-    /// y: number: top coordinate or area.
-    /// w: number: Width of area.
-    /// h: number: Height of area.
-    /// filename: string: File name without extension.
-    /// options: object: Options for screen cast.
-    ///
-    /// returns: (boolean, string): Success and the result filename with extension.
+    /**
+     * Monkey patch for screencast async.
+     *
+     * Modify option for our configuration.
+     *
+     * @param {number} x left coordinate of area.
+     * @param {number} y top coordinate or area.
+     * @param {number} w Width of area.
+     * @param {number} h Height of area.
+     * @param {string} filename File name without extension.
+     * @param {object} options Options for screen cast.
+     * @returns {[boolean, string]} Success and the result filename with extension.
+     */
     async _screencastAreaAsync(x, y, w, h, filename, options) {
-        options['framerate'] = new GLib.Variant('i', this._partFramerate.get_framerate());
-        while (this._configureIndex <= configures.length) {
-            let configure = configures[this._configureIndex];
+        return this._screencastCommonAsync (w, h, options,
+            this._origProxyScreencastArea.bind(this._screencastProxy, x, y, w, h, filename)
+        );
+    }
 
-            let pipeline = this._makePipelineString(
-                configure.videoPipeline,
-                configure.audioPipeline,
-                configure.muxer
-            );
+    /**
+     * Common pre-action and post-action for screen cast request.
+     *
+     * - Initialize configure.
+     * - Modify options (framerate, pipeline)
+     * - Fix file name
+     * - Print logs
+     * - Try next configure if failed.
+     *
+     * @param {number} width Width of screen cast area.
+     * @param {number} height Height of screen cast area.
+     * @param {object} options Option for screen cast.
+     * @param {(options: object) => Promise<[boolean, string]>} body
+     *        An async callback that accepts modified option, and result in file
+     *        path and success.
+     * @returns {[boolean, string]} Result of body, with fixed file path.
+     */
+    async _screencastCommonAsync(width, height, options, body) {
+        options['framerate'] = new GLib.Variant('i', this._partFramerate.selectedItem);
+        while (this._configureIndex <= this._configures.length) {
+            let configure = this._configures[this._configureIndex];
 
-            if (pipeline) {
-                options['pipeline'] = new GLib.Variant('s', pipeline);
-            }
+            let pipeline = this._makePipelineString(configure, width, height);
+            options['pipeline'] = new GLib.Variant('s', pipeline);
 
             try {
-                var [success, filepath] = await this._origProxyScreencastArea.call(this._screencastProxy, x, y, w, h, filename, options);
-                if (success && pipeline) {
-                    filepath = this._fixFilePath(filepath, configure.extension);
+                var [success, filepath] = await body(options);
+                if (success) {
+                    filepath = fixFilePath(filepath, configure.extension);
                 }
                 return [success, filepath];
             } catch (e) {
                 this._configureIndex++;
+
+                var videoPrep = configure.videoPrepPipeline;
+                if (this._partDownsize.selectedItem != 1.00) {
+                    videoPrep =
+                        configure.videoPrepDownsizePipeline ||
+                        configure.videoPrepPipeline;
+                }
+
                 console.log(`Tried configure [${this._configureIndex}] ${configure.id}`);
+                console.log(`- VIDEO_PREP: ${videoPrep}`);
                 console.log(`- VIDEO: ${configure.videoPipeline}`);
                 console.log(`- AUDIO: ${configure.audioPipeline}`);
                 console.log(`- MUXER: ${configure.muxer}`);
@@ -295,43 +427,67 @@ export default class ScreencastExtraFeature extends Extension {
         throw Error("Tried all configure and failed!");
     }
 
-    /// Fix file path with wrong extension.
-    ///
-    /// Usually to fix '.unknown' file path.
-    ///
-    /// filepath: string: A filepath, with worng extension.
-    /// extension: string: Desired extension of the file.
-    ///
-    /// returns: string: The new file path.
-    _fixFilePath(filepath, extension) {
-        console.log(`Fix file path: ${filepath}`);
+    /**
+     * Perform configuration initialization.
+     */
+    async _initConfigure() {
+        if (this._configures === null) {
+            try {
+                let availabilityMap = new Map();
+                let promises = CONFIGURES.map((conf) => checkConfigure(conf, availabilityMap));
+                let checkResults = await Promise.all(promises);
+                this._configures = CONFIGURES.filter((_, index) => checkResults[index]);
+            } catch (e) {
+                console.log(`Configuration filtering fails: ${e}`);
+                console.log(`Fallback to use all configures.`);
+                this._configures = CONFIGURES;
+            }
+            this._configureIndex = 0;
 
-        // Split extension from file name
-        var newFileStem = filepath;
-        let lastPoint = filepath.lastIndexOf('.')
-        if (lastPoint !== -1) {
-            newFileStem = filepath.substring(0, lastPoint);
+            console.log("Using following configure...");
+            for (let conf of this._configures) {
+                console.log(`- ${conf.id}`)
+            }
         }
-        let newFilepath = `${newFileStem}.${extension}`;
-
-        console.log(`- Into : ${newFilepath}`);
-
-        // Rename the file. (using GLib.)
-        GLib.rename(filepath, newFilepath);
-        return newFilepath;
     }
 
-    /// Make pipeline string for given set of pipeline descriptions.
-    ///
-    /// video: string: Video Pipeline.
-    /// audio: string: Audio Pipeline.
-    /// mux: string: Muxer pipeline.
-    ///
-    /// returns: string: A combined pipeline description.
-    _makePipelineString(video, audio, mux) {
-        let audioSource = this._partAudio.get_added_audio_input();
+    /**
+     * Make pipeline string for given set of pipeline descriptions.
+     *
+     * @param {Configure} configure A configure to form pipeline string.
+     * @param {number} width Width of screen cast.
+     * @param {number} height Height of screen cast.
+     * @returns {string} A combined pipeline description.
+     */
+    _makePipelineString(configure, width, height) {
+        var videoSeg = null;
+        let video = configure.videoPipeline;
+        let muxer = configure.muxer;
 
-        if (audioSource !== null) {
+        let downsizeRatio = this._partDownsize.selectedItem;
+        if (downsizeRatio != 1.00) {
+            let videoPrep =
+                configure.videoPrepDownsizePipeline ||
+                configure.videoPrepPipeline;
+
+            let downsizeWidth = Math.floor(width * downsizeRatio);
+            let downsizeHeight = Math.floor(height * downsizeRatio);
+            let downsizeCap = `video/x-raw(ANY),width=${downsizeWidth},height=${downsizeHeight}`
+
+            videoSeg = `${videoPrep} ! ${downsizeCap} ! ${video} ! ${muxer} name=mux`;
+        } else {
+            let videoPrep = configure.videoPrepPipeline;
+
+            videoSeg = `${videoPrep} ! ${video} ! ${muxer} name=mux`;
+        }
+        let audioSource = this._partAudio.makeAudioInput();
+        if (audioSource === null) {
+
+            // If we don't use audio, we can just use video segment only.
+
+            return videoSeg;
+        } else {
+
             // Put 3 segments as pipeline description string.
             //
             // As screen cast service will prepend and append video source and
@@ -345,20 +501,11 @@ export default class ScreencastExtraFeature extends Extension {
             // 3. mux
             //    Last segment will be append with file sink.
 
-            let segments = [
-                // First segment will be plugged from video source.
-                // Also define mux element and give it name.
-                `${video} ! ${mux} name=mux`,
+            let audio = configure.audioPipeline;
+            let audioSeg = `${audioSource} ! ${audio} ! mux.`;
+            let muxerSeg = "mux.";
 
-                `${audioSource} ! ${audio} ! mux.`,
-
-                // Last segment will be plugged to file sink.
-                "mux."
-            ];
-
-            return segments.join(" ");
-        } else {
-            return null;
+            return `${videoSeg} ${audioSeg} ${muxerSeg}`;
         }
     }
 }

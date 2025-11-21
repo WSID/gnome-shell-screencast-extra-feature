@@ -4,5 +4,6 @@
 
 gnome-extensions pack \
     --extra-source=parts/ \
+    --extra-source=data/icons/ \
     --podir=po/ \
     --force

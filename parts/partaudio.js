@@ -17,8 +17,9 @@
  */
 
 
-import Clutter from 'gi://Clutter'
-import GObject from 'gi://GObject'
+import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
+import GObject from 'gi://GObject';
 import Gvc from 'gi://Gvc';
 import St from 'gi://St';
 
@@ -33,13 +34,40 @@ import * as PartBase from "./partbase.js";
 
 let [SHELL_MAJOR, _] = Config.PACKAGE_VERSION.split('.').map(s => Number(s));
 
+/**
+ * A clutter constraint that enforces allocation on pixel grid.
+ *
+ * This is added to resolve issue that buttons are placed on sub-pixel position.
+ */
+const PixelConstraint = GObject.registerClass(
+class PixelConstraint extends Clutter.Constraint {
+    /**
+     * @override
+     * @param {Clutter.Actor} _actor
+     * @param {Clutter.ActorBox} allocation
+     */
+    vfunc_update_allocation(_actor, allocation) {
+        allocation.x1 = Math.ceil(allocation.x1);
+        allocation.y1 = Math.ceil(allocation.y1);
+        allocation.x2 = Math.floor(allocation.x2);
+        allocation.y2 = Math.floor(allocation.y2);
+    }
+});
 
-/// Icon Label Button that used in screen shot UI.
-///
-/// Copied from gnome-shell.
+
+/**
+ * Icon Label Button that used in screen shot UI.
+ *
+ * Copied from gnome-shell.
+ *
+ * Modified to ...
+ *
+ * - To work with various version of St, with slightly different API.
+ * - Use #Gio.Icon instead of icon name, to use our own icon.
+ */
 const IconLabelButton = GObject.registerClass(
 class IconLabelButton extends St.Button {
-    _init(iconName, label, params) {
+    _init(icon, label, params) {
         super._init(params);
 
         // Option per version
@@ -56,7 +84,7 @@ class IconLabelButton extends St.Button {
         this._container = new St.BoxLayout(containerProps);
         this.set_child(this._container);
 
-        this._container.add_child(new St.Icon({icon_name: iconName}));
+        this._container.add_child(new St.Icon({gicon: icon}));
         this._container.add_child(new St.Label({
             text: label,
             x_align: Clutter.ActorAlign.CENTER,
@@ -64,29 +92,41 @@ class IconLabelButton extends St.Button {
     }
 });
 
-export class PartAudio extends PartBase.PartBase {
-    constructor(screenshotUI, typeButtonContainer) {
-        super();
-        this.enabled = false;
-        this.screenshotUI = screenshotUI;
-        this.typeButtonContainer = typeButtonContainer;
+/**
+ * Extension part for audio.
+ *
+ * - Provide UI to activate desktop audio and mic audio.
+ * - Provide pipeline description for activated audio sources.
+ */
+export class PartAudio extends PartBase.PartUI {
+    constructor(screenshotUI, dir) {
+        super(screenshotUI);
+        this.typeButtonContainer = this.screenshotUI._typeButtonContainer;
+        
+        let iconsDir = dir.get_child("icons");
 
-
-        // Add UI
+        // Add UI        
         this.desktopAudioButton = new IconLabelButton(
-            "audio-speakers-symbolic",
+            new Gio.FileIcon({
+                file: iconsDir.get_child("screenshot-ui-speaker-symbolic.svg")
+            }),
             gettext("Desktop"),
             {
+                constraints: new PixelConstraint(),
                 style_class: 'screenshot-ui-type-button',
                 toggle_mode: true,
                 reactive: false
             }
         );
+        
 
         this.micAudioButton = new IconLabelButton(
-            "audio-input-microphone-symbolic",
+            new Gio.FileIcon({
+                file: iconsDir.get_child("screenshot-ui-mic-symbolic.svg")
+            }),
             gettext("Mic"),
             {
+                constraints: new PixelConstraint(),
                 style_class: 'screenshot-ui-type-button',
                 toggle_mode: true,
                 reactive: false
@@ -123,21 +163,22 @@ export class PartAudio extends PartBase.PartBase {
         this.mixerSinkChanged = this.mixerControl.connect(
           'default-sink-changed',
           (_object, _id) => {
-            this.updateDesktopAudioButton();
+            this._updateDesktopAudioButton();
           }
         );
 
         this.mixerSrcChanged = this.mixerControl.connect(
           'default-source-changed',
           (_object, _id) => {
-            this.updateMicAudioButton();
+            this._updateMicAudioButton();
           }
         );
 
-        this.updateDesktopAudioButton();
-        this.updateMicAudioButton();
+        this._updateDesktopAudioButton();
+        this._updateMicAudioButton();
     }
 
+    /** @override */
     destroy() {
         if (this.mixerControl) {
             if (this.mixerSrcChanged) {
@@ -183,15 +224,22 @@ export class PartAudio extends PartBase.PartBase {
             }
             this.typeButtonContainer = null;
         }
+
+        super.destroy();
     }
 
-    set_enabled(enabled) {
-        this.enabled = enabled;
-        this.updateDesktopAudioButton();
-        this.updateMicAudioButton();
+    /** @override */
+    onCastModeSelected(selected) {
+        this._updateDesktopAudioButton();
+        this._updateMicAudioButton();
     }
 
-    get_added_audio_input() {
+    /**
+     * Make audio input as pipeline description.
+     *
+     * @returns {?string}
+     */
+    makeAudioInput() {
         var desktopAudioSource = null;
         var desktopAudioChannels = 0;
         if (this.desktopAudioButton.checked) {
@@ -243,12 +291,15 @@ export class PartAudio extends PartBase.PartBase {
         }
     }
 
+    // Privates
 
-    /// Update to changed sink information.
-    ///
-    /// Sink is usually a output device like speaker.
-    updateDesktopAudioButton() {
-        if (! this.enabled) {
+    /**
+     * Update to changed sink information.
+     *
+     * Sink is usually a output device like speaker.
+     */
+    _updateDesktopAudioButton() {
+        if (! this.castModeSelected) {
             this.desktopAudioButton.reactive = false;
         } else {
             let sink = this.mixerControl.get_default_sink();
@@ -266,11 +317,13 @@ export class PartAudio extends PartBase.PartBase {
         }
     }
 
-    /// Update to changed source information.
-    ///
-    /// Source is usually a input device like microphone.
-    updateMicAudioButton() {
-        if (! this.enabled) {
+    /**
+     * Update to changed source information.
+     *
+     * Source is usually a input device like microphone.
+     */
+    _updateMicAudioButton() {
+        if (! this.castModeSelected) {
             this.micAudioButton.reactive = false;
         } else {
             let src = this.mixerControl.get_default_source();

@@ -1,4 +1,4 @@
-/* partframerate.js
+/* partdownsize.js
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,20 +15,19 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-import * as PartBase from "./partbase.js"
 
+import * as PartBase from "./partbase.js";
 
-const FRAMERATES = [15, 24, 30, 60];
-
+const DOWNSIZE_RATIO = [1.00, 0.75, 0.50, 0.33];
 
 /** @extends {PartBase.PartPopupSelect<number>} */
-export class PartFramerate extends PartBase.PartPopupSelect {
-    constructor (screenshotUI) {
-        super(screenshotUI, FRAMERATES, 30);
+export class PartDownsize extends PartBase.PartPopupSelect {
+    constructor(screenshotUI) {
+        super(screenshotUI, DOWNSIZE_RATIO, 1.00);
     }
-
+    
     /** @override */
     makeLabel(item) {
-        return `${item} FPS`;
+        return `${item * 100}%`
     }
 }
