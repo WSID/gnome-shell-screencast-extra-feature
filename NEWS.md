@@ -1,3 +1,17 @@
+## 0.2
+
+Feature Release
+
+- Feature: Quick Stop: Press "Capture Screen Cast" key combo (Usually
+  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd>) to stop
+  on-going screen cast.
+- Feature: Downsize: Downsized resolution, from 100% to 33%.
+  - Downsizing may introduce extra process.
+- Fix: Fixed blurry audio select buttons.
+- Misc: Added our own icons for audio select buttons.
+- Internal changes
+  - Check configures are available by launching `gst-inspect-1.0`.
+
 ## 0.1.1
 
 Bug Fix Release
