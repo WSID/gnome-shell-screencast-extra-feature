@@ -25,7 +25,7 @@ gnome-extensions install screencast.extra.feature@wissle.me-shell-extension.zip
 UI of Built-in Screencast feature has top part and bottom part. This extension
 adds additonal UI on these.
 
-![Screen Shot 00](docs/screenshot_01.png)
+![Screen Shot 00](docs/screenshot_02.png)
 
 1.  Top Part
 
@@ -41,7 +41,8 @@ adds additonal UI on these.
 
     Additional option for screen cast.
 
-    - 100%: Downsize screen cast.
+    - 100%: Downsize screen cast resolution. (Lesser pixels for video) Supported
+      to 33%.
 
     - FPS: Framerate for screen cast. (How many pictures per seconds) Supported
       up to 60 Hz.
