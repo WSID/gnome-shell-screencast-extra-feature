@@ -18,6 +18,7 @@
 
 // GIR imports
 
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gst from 'gi://Gst';
 
@@ -180,6 +181,34 @@ function fixFilePath(filepath, extension) {
     return newFilepath;
 }
 
+/**
+ * Check that element exists.
+ *
+ * NOTE: This just checks existence of elements. Element's availability is
+ * not known. (like missing GPU or something...)
+ *
+ * NOTE: This launches extenral process `gst-inspect-1.0 --exists ${element}`
+ *   The extension used to use GStreamer, but sometimes Gst.init(...) in
+ *   extension would freeze up whole gnome-shell.
+ *
+ * @param {string} element Element
+ * @returns {Promise<boolean>} Whether the element is available.
+ */
+async function checkElement(element) {
+    return new Promise ((resolve) => {
+        let sub = new Gio.Subprocess({
+            argv: ["gst-inspect-1.0", "--exists", element],
+            flags: Gio.SubprocessFlags.NONE
+        });
+        sub.init(null);
+
+        sub.wait_async(null, (src, result) => {
+            src.wait_finish(result);
+            resolve(src.get_exit_status() == 0);
+        });
+    });
+}
+
 
 /**
  * Check that pipeline can be created properly.
@@ -188,10 +217,10 @@ function fixFilePath(filepath, extension) {
  * not known. (like missing GPU or something...)
  *
  * @param {string} pipeline Pipeline
- * @param {Map<string, boolean>} availabilityMap Availability Map to cache result.
- * @returns {boolean} Whether the pipeline is available.
+ * @param {Map<string, Promise<boolean>>} availabilityMap Availability Map to cache result.
+ * @returns {Promise<boolean>} Whether the pipeline is available.
  */
-function checkPipeline(pipeline, availabilityMap) {
+async function checkPipeline(pipeline, availabilityMap) {
     let words = pipeline.split(/\s+/);
     let elements = words.filter((word) => {
         return ! (
@@ -201,29 +230,39 @@ function checkPipeline(pipeline, availabilityMap) {
         );
     });
 
-    return elements.every((elem) => {
+    let promises = elements.map ((elem) => {
         if (availabilityMap.has(elem)) {
             return availabilityMap.get(elem);
         } else {
-            let availability = Gst.ElementFactory.find(elem) !== null;
+            let availability = checkElement(elem);
             availabilityMap.set(elem, availability);
             return availability;
         }
     });
+
+    let results = await Promise.all(promises);
+
+    return results.every(res => res);
 }
 
 /**
  * Check that configure can be created properly.
  *
  * @param {Configure} configure Configure.
- * @param {Map<string, boolean>} availabilityMap Availability Map to cache result.
- * @returns {boolean} Whether the configure is available to use.
+ * @param {Map<string, Promise<boolean>>} availabilityMap Availability Map to cache result.
+ * @returns {Promise<boolean>} Whether the configure is available to use.
  */
-function checkConfigure(configure, availabilityMap) {
-    return  checkPipeline(configure.videoPrepPipeline, availabilityMap) &&
-            checkPipeline(configure.videoPipeline, availabilityMap) &&
-            checkPipeline(configure.audioPipeline, availabilityMap) &&
-            checkPipeline(configure.muxer, availabilityMap);
+async function checkConfigure(configure, availabilityMap) {
+    let promises = [
+        checkPipeline(configure.videoPrepPipeline, availabilityMap),
+        checkPipeline(configure.videoPipeline, availabilityMap),
+        checkPipeline(configure.audioPipeline, availabilityMap),
+        checkPipeline(configure.muxer, availabilityMap)
+    ];
+
+    let results = await Promise.all(promises);
+
+    return results.every(res => res);
 }
 
 export default class ScreencastExtraFeature extends Extension {
@@ -250,6 +289,8 @@ export default class ScreencastExtraFeature extends Extension {
 
         this._screencastProxy.ScreencastAsync = this._screencastAsync.bind(this);
         this._screencastProxy.ScreencastAreaAsync = this._screencastAreaAsync.bind(this);
+
+        this._initConfigure();
     }
 
     disable() {
@@ -350,8 +391,6 @@ export default class ScreencastExtraFeature extends Extension {
      * @returns {[boolean, string]} Result of body, with fixed file path.
      */
     async _screencastCommonAsync(width, height, options, body) {
-        this._initConfigure();
-
         options['framerate'] = new GLib.Variant('i', this._partFramerate.selectedItem);
         while (this._configureIndex <= this._configures.length) {
             let configure = this._configures[this._configureIndex];
@@ -389,20 +428,17 @@ export default class ScreencastExtraFeature extends Extension {
     }
 
     /**
-     * Perform configuration initialization, which is supposed to be deferred at later.
+     * Perform configuration initialization.
      */
-    _initConfigure() {
+    async _initConfigure() {
         if (this._configures === null) {
             try {
-                let needGstInit = ! Gst.is_initialized();
-                if (needGstInit) Gst.init_check([]);
-
                 let availabilityMap = new Map();
-
-                this._configures = CONFIGURES.filter((conf) => checkConfigure(conf, availabilityMap));
-                if (needGstInit) Gst.deinit();
+                let promises = CONFIGURES.map((conf) => checkConfigure(conf, availabilityMap));
+                let checkResults = await Promise.all(promises);
+                this._configures = CONFIGURES.filter((_, index) => checkResults[index]);
             } catch (e) {
-                console.log(`Gstreamer init failed: ${e}`);
+                console.log(`Configuration filtering fails: ${e}`);
                 console.log(`Fallback to use all configures.`);
                 this._configures = CONFIGURES;
             }
