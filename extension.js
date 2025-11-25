@@ -31,6 +31,7 @@ import * as PartAudio from "./parts/partaudio.js"
 import * as PartFramerate from "./parts/partframerate.js"
 import * as PartQuickStop from "./parts/partquickstop.js"
 import * as PartDownsize from './parts/partdownsize.js';
+import * as PartIndicator from "./parts/partindicator.js";
 
 // Some Constants
 
@@ -275,12 +276,14 @@ export default class ScreencastExtraFeature extends Extension {
 
         // Reference from Main UI
         this._screenshotUI = Main.screenshotUI;
+        this._screenRecordingIndicator = Main.panel.statusArea.screenRecording;
 
         // Extension parts.
         this._partAudio = new PartAudio.PartAudio(this._screenshotUI, this.dir);
         this._partFramerate = new PartFramerate.PartFramerate(this._screenshotUI);
         this._partDownsize = new PartDownsize.PartDownsize(this._screenshotUI);
         this._partQuickStop = new PartQuickStop.PartQuickStop(this._screenshotUI);
+        this._partIndicator = new PartIndicator.PartIndicator(this._screenshotUI, this._screenRecordingIndicator);
 
         // Monkey patch
         this._screencastProxy = this._screenshotUI._screencastProxy;
@@ -310,6 +313,11 @@ export default class ScreencastExtraFeature extends Extension {
         }
 
         // Destroy parts.
+        if (this._partIndicator) {
+            this._partIndicator.destroy();
+            this._partIndicator = null;
+        }
+
         if (this._partAudio) {
             this._partAudio.destroy();
             this._partAudio = null;
@@ -330,6 +338,7 @@ export default class ScreencastExtraFeature extends Extension {
             this._partQuickStop = null;
         }
 
+        this._screen
         this._screenshotUI = null;
 
         // Internal variables
@@ -391,6 +400,7 @@ export default class ScreencastExtraFeature extends Extension {
      * @returns {[boolean, string]} Result of body, with fixed file path.
      */
     async _screencastCommonAsync(width, height, options, body) {
+        this._partIndicator.onPipelineSetupBegin();
         options['framerate'] = new GLib.Variant('i', this._partFramerate.selectedItem);
         while (this._configureIndex <= this._configures.length) {
             let configure = this._configures[this._configureIndex];
@@ -401,6 +411,7 @@ export default class ScreencastExtraFeature extends Extension {
             try {
                 var [success, filepath] = await body(options);
                 if (success) {
+                    this._partIndicator.onPipelineSetupDone();
                     filepath = fixFilePath(filepath, configure.extension);
                 }
                 return [success, filepath];
