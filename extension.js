@@ -77,6 +77,32 @@ const SWENC_MEMFD_PREP_PIPELINE = "videoconvert chroma-mode=none dither=none mat
  */
 const CONFIGURES = [
   {
+    id: "hwenc-cuda-h264-nvenc",
+    videoPrepPipeline: "cudaupload ! cudaconvert",
+    videoPrepDownsizePipeline: "cudaupload ! cudaconvertscale",
+    videoPipeline: [
+        "nvh264enc",
+        "queue",
+        "h264parse"
+    ].join(" ! "),
+    audioPipeline: AAC_PIPELINE,
+    muxer: "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
+    extension: "mp4"
+  },
+  {
+    id: "hwenc-gl-h264-nvenc",
+    videoPrepPipeline: "cudaupload", // Prefer cudaupload to gl pipeline.
+    videoPrepDownsizePipeline: "glupload ! glcolorconvert ! glcolorscale",
+    videoPipeline: [
+        "nvh264enc",
+        "queue",
+        "h264parse"
+    ].join(" ! "),
+    audioPipeline: AAC_PIPELINE,
+    muxer: "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
+    extension: "mp4"
+  },
+  {
     id: "hwenc-dmabuf-h264-vaapi-lp",
     videoPrepPipeline: HWENC_DMABUF_PREP_PIPELINE,
     videoPrepDownsizePipeline: null,
