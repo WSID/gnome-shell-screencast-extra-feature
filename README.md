@@ -22,10 +22,12 @@ gnome-extensions install screencast.extra.feature@wissle.me-shell-extension.zip
 
 ## UI
 
+### Main UI
+
 UI of Built-in Screencast feature has top part and bottom part. This extension
 adds additonal UI on these.
 
-![Screen Shot 00](docs/screenshot_02.png)
+![Screen Shot Main UI](docs/screenshot_02.png)
 
 1.  Top Part
 
@@ -46,3 +48,12 @@ adds additonal UI on these.
 
     - FPS: Framerate for screen cast. (How many pictures per seconds) Supported
       up to 60 Hz.
+
+### Indicator
+
+![Screen Shot Indicator](docs/screenshot_indicator_01.png)
+
+If pipeline is being prepared, this will show spinning animation instead of
+time.
+
+Once pipeline is ready and record starts, recording time will show up.
