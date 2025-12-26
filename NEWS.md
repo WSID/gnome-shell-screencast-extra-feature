@@ -1,3 +1,14 @@
+## 0.3
+
+Feature Release
+
+- Feature: Added spinner in screencast indicator.
+  This is shown while screencast service is building pipeline.
+
+- Configure: Added basic nvenc config.
+  Cuda can be used, if cudaconvert is available.
+  But uses gl if not.
+
 ## 0.2
 
 Feature Release
