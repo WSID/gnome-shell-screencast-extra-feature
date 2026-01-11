@@ -253,7 +253,9 @@ export class PartAudio extends PartBase.PartUI {
                 `pulsesrc device=${monitorName} provide-clock=false`,
 
                 // Need to specify channels, so that right channels are applied.
-                `capsfilter caps=audio/x-raw,channels=${desktopAudioChannels}`
+                `capsfilter caps=audio/x-raw,channels=${desktopAudioChannels}`,
+                "audioconvert",
+                "queue"
             ];
             desktopAudioSource = audioSourceComp.join(" ! ");
         }
@@ -268,7 +270,9 @@ export class PartAudio extends PartBase.PartUI {
                 `pulsesrc device=${srcName} provide-clock=false`,
 
                 // Need to specify channels, so that right channels are applied.
-                `capsfilter caps=audio/x-raw,channels=${srcChannels}`
+                `capsfilter caps=audio/x-raw,channels=${srcChannels}`,
+                "audioconvert",
+                "queue"
             ];
 
             micAudioSource = audioSourceComp.join(" ! ");
@@ -278,7 +282,7 @@ export class PartAudio extends PartBase.PartUI {
             let segments = [
                 `${desktopAudioSource} ! audiomixer name=am latency=100000000`,
                 `${micAudioSource} ! am.`,
-                `am. ! capsfilter caps=audio/x-raw,channels=${desktopAudioChannels}`
+                `am. ! capsfilter caps=audio/x-raw,channels=${desktopAudioChannels} ! audioconvert ! queue`
             ];
 
             return segments.join(" ");
