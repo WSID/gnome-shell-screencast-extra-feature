@@ -57,3 +57,14 @@ If pipeline is being prepared, this will show spinning animation instead of
 time.
 
 Once pipeline is ready and record starts, recording time will show up.
+
+## What is actually happening.
+
+Gnome Shell comes with some services that runs in separated process.
+
+Screen Cast feature is also runs in separated process, and Gnome Shell passes
+options for recording.
+
+Fortunately, pipeline description can be passed as an option.
+
+This extension just modifies UI and the option that passed.
