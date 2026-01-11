@@ -1,3 +1,14 @@
+## 0.3.1
+
+Minor fix Release
+
+- Fix: Follow common practice on audio pipeline.
+  This will improve stability for audio processing, because of added `queue`
+  element.
+
+- Translation: Russian and Bulgarian translation is added, thanks to @pacu23 .
+  (pacu23@gmail.com)
+
 ## 0.3
 
 Feature Release
