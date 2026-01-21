@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: screencast.extra.feature 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-27 21:46+0900\n"
+"POT-Creation-Date: 2026-01-21 23:33+0900\n"
 "PO-Revision-Date: 2025-10-26 17:51+0900\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,15 +17,19 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: extension.js:169
+#: prefs.js:31
+msgid "General"
+msgstr ""
+
+#: parts/partaudio.js:113
 msgid "Desktop"
 msgstr "데스크탑"
 
-#: extension.js:179
+#: parts/partaudio.js:127
 msgid "Mic"
 msgstr "마이크"
 
-#: extension.js:589
+#: parts/partaudio.js:315
 #, javascript-format
 msgid ""
 "Record Desktop Audio\n"
@@ -34,7 +38,7 @@ msgstr ""
 "데스크탑 소리 녹음\n"
 "%s: %s"
 
-#: extension.js:593
+#: parts/partaudio.js:319
 msgid ""
 "Cannot record Desktop Audio.\n"
 "No audio device."
@@ -42,7 +46,7 @@ msgstr ""
 "데스크탑 소리를 녹음할 수 없어요.\n"
 "소리 장치가 없어요."
 
-#: extension.js:611
+#: parts/partaudio.js:339
 #, javascript-format
 msgid ""
 "Record Mic Audio\n"
@@ -51,10 +55,14 @@ msgstr ""
 "마이크 소리 녹음\n"
 "%s: %s"
 
-#: extension.js:615
+#: parts/partaudio.js:343
 msgid ""
 "Cannot record Mic Audio.\n"
 "No audio device."
 msgstr ""
 "마이크 소리를 녹음할 수 없어요.\n"
 "소리 장치가 없어요."
+
+#: parts/partpref.js:60
+msgid "Screencast extra feature preferences"
+msgstr "Screencast 추가 기능 설정"

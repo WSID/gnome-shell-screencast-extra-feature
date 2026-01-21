@@ -32,6 +32,7 @@ import * as PartFramerate from "./parts/partframerate.js"
 import * as PartQuickStop from "./parts/partquickstop.js"
 import * as PartDownsize from './parts/partdownsize.js';
 import * as PartIndicator from "./parts/partindicator.js";
+import * as PartPref from "./parts/partpref.js";
 
 // Some Constants
 
@@ -305,6 +306,7 @@ export default class ScreencastExtraFeature extends Extension {
         this._screenRecordingIndicator = Main.panel.statusArea.screenRecording;
 
         // Extension parts.
+        this._partPref = new PartPref.PartPref(this._screenshotUI, this);
         this._partAudio = new PartAudio.PartAudio(this._screenshotUI, this.dir);
         this._partFramerate = new PartFramerate.PartFramerate(this._screenshotUI);
         this._partDownsize = new PartDownsize.PartDownsize(this._screenshotUI);
@@ -362,6 +364,11 @@ export default class ScreencastExtraFeature extends Extension {
         if (this._partQuickStop) {
             this._partQuickStop.destroy();
             this._partQuickStop = null;
+        }
+        
+        if (this._partPref) {
+            this._partPref.destroy();
+            this._partPref = null;
         }
 
         this._screen

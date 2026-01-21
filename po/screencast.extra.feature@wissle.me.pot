@@ -1,14 +1,14 @@
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) 2025 Wissle.
-# This file is distributed under the same license as the screencast.extra.feature package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+# Copyright (C) YEAR Wissle
+# This file is distributed under the same license as the Screencast extra Feature package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: screencast.extra.feature 0.1\n"
+"Project-Id-Version: Screencast extra Feature 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-27 21:46+0900\n"
+"POT-Creation-Date: 2026-01-21 23:33+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,36 +17,44 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:169
+#: prefs.js:31
+msgid "General"
+msgstr ""
+
+#: parts/partaudio.js:113
 msgid "Desktop"
 msgstr ""
 
-#: extension.js:179
+#: parts/partaudio.js:127
 msgid "Mic"
 msgstr ""
 
-#: extension.js:589
+#: parts/partaudio.js:315
 #, javascript-format
 msgid ""
 "Record Desktop Audio\n"
 "%s: %s"
 msgstr ""
 
-#: extension.js:593
+#: parts/partaudio.js:319
 msgid ""
 "Cannot record Desktop Audio.\n"
 "No audio device."
 msgstr ""
 
-#: extension.js:611
+#: parts/partaudio.js:339
 #, javascript-format
 msgid ""
 "Record Mic Audio\n"
 "%s: %s"
 msgstr ""
 
-#: extension.js:615
+#: parts/partaudio.js:343
 msgid ""
 "Cannot record Mic Audio.\n"
 "No audio device."
+msgstr ""
+
+#: parts/partpref.js:60
+msgid "Screencast extra feature preferences"
 msgstr ""
