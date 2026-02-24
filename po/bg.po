@@ -17,11 +17,11 @@ msgstr ""
 
 #: extension.js:169
 msgid "Desktop"
-msgstr "Работен плот"
+msgstr "Плот"
 
 #: extension.js:179
 msgid "Mic"
-msgstr "Микрофон"
+msgstr "Мик."
 
 #: extension.js:589
 #, javascript-format
