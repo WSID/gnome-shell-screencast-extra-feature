@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<interface domain="screencsat.extra.feature@wissle.me">
+  <requires lib="Gtk" version="4.0"/>
+  <requires lib="Adw" version="1.0"/>
+  <object class="AdwPreferencesPage" id="page">
+    <property name="name">pipeline</property>
+    <property name="title" translatable="yes">Pipeline</property>
+    <property name="icon-name">prefs-pipeline</property>
+
+    <child>
+      <object class="AdwPreferencesGroup" id="configure_group">
+        <property name="title" translatable="yes">Pipeline Configure</property>
+        <property name="description" translatable="yes">Determines how screencasts are encoded. Contains encoding options.
+Each will be tried out in order.</property>
+      </object>
+    </child>
+  </object>
+
+  <object class="AdwAlertDialog" id="dialog_alert_reset">
+    <property name="heading" translatable="yes">Reset to default?</property>
+    <property name="body" translatable="yes">This will reset pipeline configures as default. All your changes are lost.</property>
+    <responses>
+      <response id="yes" appearance="destructive" translatable="yes">Yes</response>
+      <response id="no" translatable="yes">No</response>
+    </responses>
+  </object>
+</interface>

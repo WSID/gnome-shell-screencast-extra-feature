@@ -3,5 +3,90 @@
   <schema
     id="org.gnome.shell.extensions.screencastExtraFeature"
     path="/org/gnome/shell/extensions/screencastExtraFeature/">
+    <key name="pipeline-configures" type="a(sssssss)">
+      <default>
+        [
+          (
+            "hwenc-cuda-h264-nvenc",
+            "cudaupload ! cudaconvert",
+            "cudaupload ! cudaconvertscale",
+            "nvh264enc ! queue ! h264parse",
+            "avenc_aac ! queue",
+            "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
+            "mp4"
+          ),
+          (
+            "hwenc-gl-h264-nvenc",
+            "cudaupload",
+            "glupload ! glcolorconvert ! glcolorscale",
+            "nvh264enc ! queue ! h264parse",
+            "avenc_aac ! queue",
+            "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
+            "mp4"
+          ),
+          (
+            "hwenc-dmabuf-h264-vaapi-lp",
+            "vapostproc",
+            "vapostproc",
+            "vah264lpenc ! queue ! h264parse",
+            "avenc_aac ! queue",
+            "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
+            "mp4"
+          ),
+          (
+            "hwenc-dmabuf-h264-vaapi",
+            "vapostproc",
+            "vapostproc",
+            "vah264enc ! queue ! h264parse",
+            "avenc_aac ! queue",
+            "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
+            "mp4"
+          ),
+          (
+            "swenc-dmabuf-h264-openh264",
+            "glupload ! glcolorconvert ! gldownload ! queue",
+            "glupload ! glcolorconvert ! glcolorscale ! glcolorconvert ! gldownload ! queue",
+            "openh264enc deblocking=off background-detection=false complexity=low adaptive-quantization=false qp-max=26 qp-min=26 multi-thread=%T slice-mode=auto ! queue ! h264parse",
+            "avenc_aac ! queue",
+            "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
+            "mp4"
+          ),
+          (
+            "swenc-memfd-h264-openh264",
+            "videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T ! videoscale ! queue",
+            "videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T ! videoscale ! queue",
+            "openh264enc deblocking=off background-detection=false complexity=low adaptive-quantization=false qp-max=26 qp-min=26 multi-thread=%T slice-mode=auto ! queue ! h264parse",
+            "avenc_aac ! queue",
+            "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
+            "mp4"
+          ),
+          (
+            "swenc-dmabuf-vp8-vp8enc",
+            "glupload ! glcolorconvert ! gldownload ! queue",
+            "glupload ! glcolorconvert ! glcolorscale ! glcolorconvert ! gldownload ! queue",
+            "vp8enc cpu-used=16 max-quantizer=17 deadline=1 keyframe-mode=disabled threads=%T static-threshold=1000 buffer-size=20000 ! queue",
+            "vorbisenc ! queue",
+            "webmmux",
+            "webm"
+          ),
+          (
+            "swenc-memfd-vp8-vp8enc",
+            "videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T ! videoscale ! queue",
+            "videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T ! videoscale ! queue",
+            "vp8enc cpu-used=16 max-quantizer=17 deadline=1 keyframe-mode=disabled threads=%T static-threshold=1000 buffer-size=20000 ! queue",
+            "vorbisenc ! queue",
+            "webmmux",
+            "webm"
+          )
+        ]
+      </default>
+      <description>
+        Pipeline configures to use.
+        Configures are tried in order.
+
+        [ (name, video preparation, video preparation resizing, video encoding, audio encoding, muxer, file extension), ... ]
+      </description>
+    </key>
   </schema>
 </schemalist>
+

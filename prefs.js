@@ -18,7 +18,10 @@
 
 // GIR imports
 
+import Gtk from "gi://Gtk";
 import Adw from "gi://Adw";
+
+import * as PartPipeline from "./prefsParts/partpipeline.js";
 
 import {ExtensionPreferences, gettext} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
@@ -27,10 +30,24 @@ export default class ScreencastExtraFeaturePreferences extends ExtensionPreferen
      * @param {Adw.PreferencesWindow} window A window.
      */
     fillPreferencesWindow(window) {
+        /**
+         * @type {Gio.Settings}
+         */
+        this._settings = this.getSettings("org.gnome.shell.extensions.screencastExtraFeature");
+        
+        // Register icon before creating preference parts.
+
+        let display = window.get_display();
+        let icon_theme = Gtk.IconTheme.get_for_display(display);
+        icon_theme.add_search_path(`${this.path}/icons`);
+
+        this._partPipeline = new PartPipeline.PartPipeline(window, this.path, this._settings);
+
         let generalPage = new Adw.PreferencesPage({
             title: gettext("General")
         });
         
         window.add(generalPage);
+        window.add(this._partPipeline.page);
     }
-} 
+}

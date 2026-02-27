@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<interface domain="screencsat.extra.feature@wissle.me">
+  <requires lib="Gtk" version="4.0"/>
+  <requires lib="Adw" version="1.0"/>
+  
+  <object class="AdwActionRow" id="row">
+    <!-- title manuall setup -->
+    <property name="activatable-widget">edit_button</property>
+    
+    <child type="suffix">
+      <object class="GtkButton" id="edit_button">
+        <property name="icon-name">document-edit-symbolic</property>
+        <property name="action-name">configures.edit</property>
+        <style>
+          <class name="flat"/>
+        </style>
+      </object>
+    </child>
+    
+    <child type="suffix">
+      <object class="GtkMenuButton" id="menu_button">
+        <property name="direction">GTK_ARROW_NONE</property>
+        <style>
+          <class name="flat"/>
+        </style>
+      </object>
+    </child>
+    
+  </object>
+</interface>

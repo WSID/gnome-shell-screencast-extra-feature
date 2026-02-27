@@ -34,28 +34,6 @@ import * as PartDownsize from './parts/partdownsize.js';
 import * as PartIndicator from "./parts/partindicator.js";
 import * as PartPref from "./parts/partpref.js";
 
-// Some Constants
-
-// Audio Pipeline Description.
-
-/** A pipeline for audio record, in vorbis. */
-const VORBIS_PIPELINE = "vorbisenc ! queue";
-
-/** A pipeline for audio record, in aac. */
-const AAC_PIPELINE = "avenc_aac ! queue"
-
-
-// Video conversion and resize.
-
-const HWENC_DMABUF_PREP_PIPELINE = "vapostproc";
-
-const SWENC_DMABUF_PREP_PIPELINE = "glupload ! glcolorconvert ! gldownload ! queue";
-
-  // NOTE: To use glcolorscale, we have to color convert to RGBA.
-const SWENC_DMABUF_PREP_DOWNSIZE_PIPELINE = "glupload ! glcolorconvert ! glcolorscale ! glcolorconvert ! gldownload ! queue";
-
-const SWENC_MEMFD_PREP_PIPELINE = "videoconvert chroma-mode=none dither=none matrix-mode=output-only n-threads=%T ! videoscale ! queue"
-
 /**
  * Configuration for pipeline.
  *
@@ -68,118 +46,6 @@ const SWENC_MEMFD_PREP_PIPELINE = "videoconvert chroma-mode=none dither=none mat
  * @property {string} muxer Muxer pipeline.
  * @property {string} extension Extension of file name.
  */
-
-/**
- * Configuration for pipeline.
- * video pipelines are copied from gnome-shell screencast service.
- * They would be probably in separated service, so I cannot monkey-patch on it.
- *
- * @type {Configure[]}
- */
-const CONFIGURES = [
-  {
-    id: "hwenc-cuda-h264-nvenc",
-    videoPrepPipeline: "cudaupload ! cudaconvert",
-    videoPrepDownsizePipeline: "cudaupload ! cudaconvertscale",
-    videoPipeline: [
-        "nvh264enc",
-        "queue",
-        "h264parse"
-    ].join(" ! "),
-    audioPipeline: AAC_PIPELINE,
-    muxer: "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
-    extension: "mp4"
-  },
-  {
-    id: "hwenc-gl-h264-nvenc",
-    videoPrepPipeline: "cudaupload", // Prefer cudaupload to gl pipeline.
-    videoPrepDownsizePipeline: "glupload ! glcolorconvert ! glcolorscale",
-    videoPipeline: [
-        "nvh264enc",
-        "queue",
-        "h264parse"
-    ].join(" ! "),
-    audioPipeline: AAC_PIPELINE,
-    muxer: "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
-    extension: "mp4"
-  },
-  {
-    id: "hwenc-dmabuf-h264-vaapi-lp",
-    videoPrepPipeline: HWENC_DMABUF_PREP_PIPELINE,
-    videoPrepDownsizePipeline: null,
-    videoPipeline: [
-        "vah264lpenc",
-        "queue",
-        "h264parse"
-    ].join(" ! "),
-    audioPipeline: AAC_PIPELINE,
-    muxer: "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
-    extension: "mp4"
-  },
-  {
-    id: "hwenc-dmabuf-h264-vaapi",
-    videoPrepPipeline: HWENC_DMABUF_PREP_PIPELINE,
-    videoPrepDownsizePipeline: null,
-    videoPipeline: [
-        "vah264enc",
-        "queue",
-        "h264parse"
-    ].join(" ! "),
-    audioPipeline: AAC_PIPELINE,
-    muxer: "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
-    extension: "mp4"
-  },
-  {
-    id: "swenc-dmabuf-h264-openh264",
-    videoPrepPipeline: SWENC_DMABUF_PREP_PIPELINE,
-    videoPrepDownsizePipeline: SWENC_DMABUF_PREP_DOWNSIZE_PIPELINE,
-    videoPipeline: [
-        "openh264enc deblocking=off background-detection=false complexity=low adaptive-quantization=false qp-max=26 qp-min=26 multi-thread=%T slice-mode=auto",
-        "queue",
-        "h264parse"
-    ].join(" ! "),
-    audioPipeline: AAC_PIPELINE,
-    muxer: "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
-    extension: "mp4"
-  },
-  {
-    id: "swenc-memfd-h264-openh264",
-    videoPrepPipeline: SWENC_MEMFD_PREP_PIPELINE,
-    videoPrepDownsizePipeline: null,
-    videoPipeline: [
-        "openh264enc deblocking=off background-detection=false complexity=low adaptive-quantization=false qp-max=26 qp-min=26 multi-thread=%T slice-mode=auto",
-        "queue",
-        "h264parse"
-    ].join(" ! "),
-    audioPipeline: AAC_PIPELINE,
-    muxer: "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
-    extension: "mp4"
-  },
-  {
-    id: "swenc-dmabuf-vp8-vp8enc",
-    videoPrepPipeline: SWENC_DMABUF_PREP_PIPELINE,
-    videoPrepDownsizePipeline: SWENC_DMABUF_PREP_DOWNSIZE_PIPELINE,
-    videoPipeline: [
-        "vp8enc cpu-used=16 max-quantizer=17 deadline=1 keyframe-mode=disabled threads=%T static-threshold=1000 buffer-size=20000",
-        "queue",
-    ].join(" ! "),
-    audioPipeline: VORBIS_PIPELINE,
-    muxer: "webmmux",
-    extension: "webm"
-  },
-  {
-    id: "swenc-memfd-vp8-vp8enc",
-    videoPrepPipeline: SWENC_MEMFD_PREP_PIPELINE,
-    videoPrepDownsizePipeline: null,
-    videoPipeline: [
-      'vp8enc cpu-used=16 max-quantizer=17 deadline=1 keyframe-mode=disabled threads=%T static-threshold=1000 buffer-size=20000',
-      'queue'
-    ].join(" ! "),
-    audioPipeline: VORBIS_PIPELINE,
-    muxer: "webmmux",
-    extension: "webm"
-  }
-];
 
 
 /**
@@ -296,10 +162,14 @@ async function checkConfigure(configure, availabilityMap) {
 export default class ScreencastExtraFeature extends Extension {
     enable() {
         // Internal variables.
+        /**
+         * @type {Gio.Settings}
+         */
+        this._settings = this.getSettings("org.gnome.shell.extensions.screencastExtraFeature");
 
         /** @type {?Configure[]} */
-        this._configures = null;
-        this._configureIndex = 0;
+        this._pipelineConfigures = null;
+        this._pipelineConfigureIndex = 0;
 
         // Reference from Main UI
         this._screenshotUI = Main.screenshotUI;
@@ -321,7 +191,19 @@ export default class ScreencastExtraFeature extends Extension {
         this._screencastProxy.ScreencastAsync = this._screencastAsync.bind(this);
         this._screencastProxy.ScreencastAreaAsync = this._screencastAreaAsync.bind(this);
 
-        this._initConfigure();
+        // Setup pipeline
+        this._setupPipelineConfigure().catch((e) => {
+            console.warn(`Setup pipeline configure failed: ${e}`);
+        });
+
+        this._settings.connect("changed::pipeline-configures", () => {
+            this._pipelineConfigures = null;
+            this._pipelineConfigureIndex = 0;
+
+            this._setupPipelineConfigure().catch((e) => {
+                console.warn(`Setup pipeline configure failed: ${e}`);
+            });
+        });
     }
 
     disable() {
@@ -375,7 +257,9 @@ export default class ScreencastExtraFeature extends Extension {
         this._screenshotUI = null;
 
         // Internal variables
-        this._configures = null;
+        this._pipelineConfigures = null;
+
+        this._settings = null;
     }
 
     // Privates
@@ -435,8 +319,8 @@ export default class ScreencastExtraFeature extends Extension {
     async _screencastCommonAsync(width, height, options, body) {
         this._partIndicator.onPipelineSetupBegin();
         options['framerate'] = new GLib.Variant('i', this._partFramerate.selectedItem);
-        while (this._configureIndex <= this._configures.length) {
-            let configure = this._configures[this._configureIndex];
+        while (this._pipelineConfigureIndex <= this._pipelineConfigures.length) {
+            let configure = this._pipelineConfigures[this._pipelineConfigureIndex];
 
             let pipeline = this._makePipelineString(configure, width, height);
             options['pipeline'] = new GLib.Variant('s', pipeline);
@@ -449,7 +333,7 @@ export default class ScreencastExtraFeature extends Extension {
                 }
                 return [success, filepath];
             } catch (e) {
-                this._configureIndex++;
+                this._pipelineConfigureIndex++;
 
                 var videoPrep = configure.videoPrepPipeline;
                 if (this._partDownsize.selectedItem != 1.00) {
@@ -458,7 +342,7 @@ export default class ScreencastExtraFeature extends Extension {
                         configure.videoPrepPipeline;
                 }
 
-                console.log(`Tried configure [${this._configureIndex}] ${configure.id}`);
+                console.log(`Tried configure [${this._pipelineConfigureIndex}] ${configure.id}`);
                 console.log(`- VIDEO_PREP: ${videoPrep}`);
                 console.log(`- VIDEO: ${configure.videoPipeline}`);
                 console.log(`- AUDIO: ${configure.audioPipeline}`);
@@ -474,24 +358,35 @@ export default class ScreencastExtraFeature extends Extension {
     /**
      * Perform configuration initialization.
      */
-    async _initConfigure() {
-        if (this._configures === null) {
-            try {
-                let availabilityMap = new Map();
-                let promises = CONFIGURES.map((conf) => checkConfigure(conf, availabilityMap));
-                let checkResults = await Promise.all(promises);
-                this._configures = CONFIGURES.filter((_, index) => checkResults[index]);
-            } catch (e) {
-                console.log(`Configuration filtering fails: ${e}`);
-                console.log(`Fallback to use all configures.`);
-                this._configures = CONFIGURES;
-            }
-            this._configureIndex = 0;
+    async _setupPipelineConfigure() {
+        let pipelineConfigures = this._settings.get_value("pipeline-configures").recursiveUnpack().map((tuple) => {
+            return {
+                "id": tuple[0],
+                "videoPrepPipeline": tuple[1],
+                "videoPrepDownsizePipeline": tuple[2],
+                "videoPipeline": tuple[3],
+                "audioPipeline": tuple[4],
+                "muxer": tuple[5],
+                "extension": tuple[6]
+            };
+        });
 
-            console.log("Using following configure...");
-            for (let conf of this._configures) {
-                console.log(`- ${conf.id}`)
-            }
+        try {
+
+            let availabilityMap = new Map();
+            let promises = pipelineConfigures.map((conf) => checkConfigure(conf, availabilityMap));
+            let checkResults = await Promise.all(promises);
+            this._pipelineConfigures = pipelineConfigures.filter((_, index) => checkResults[index]);
+        } catch (e) {
+            console.log(`Configuration filtering fails: ${e}`);
+            console.log(`Fallback to use all configures.`);
+            this._pipelineConfigures = pipelineConfigures;
+        }
+        this._pipelineConfigureIndex = 0;
+
+        console.log("Using following configure...");
+        for (let conf of this._pipelineConfigures) {
+            console.log(`- ${conf.id}`)
         }
     }
 

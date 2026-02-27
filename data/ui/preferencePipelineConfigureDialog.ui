@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<interface domain="screencsat.extra.feature@wissle.me">
+  <requires lib="Gtk" version="4.0"/>
+  <requires lib="Adw" version="1.0"/>
+
+  <object class="AdwAlertDialog" id="dialog">
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="width-request">500</property>
+        <child>
+          <object class="AdwEntryRow" id="id_row">
+            <property name="title" translatable="yes">Configure Name</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwEntryRow" id="video_prep_row">
+            <property name="tooltip-text" translatable="yes">Pipeline Description to prepare video, before encoding.</property>
+            <property name="title" translatable="yes">Video Preparation Pipeline</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwEntryRow" id="video_prep_resize_row">
+            <property name="tooltip-text" translatable="yes">Pipeline Description to resize and prepare video, before encoding.</property>
+            <property name="title" translatable="yes">Video Preparation Pipeline with Resize</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwEntryRow" id="video_row">
+            <property name="tooltip-text" translatable="yes">Pipeline Description to encode video, before mux.
+Usually put encoder with options.</property>
+            <property name="title" translatable="yes">Video Encode Pipeline</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwEntryRow" id="audio_row">
+            <property name="tooltip-text" translatable="yes">Pipeline Description to encode audio, before mux.
+Usually put encoder with options.</property>
+            <property name="title" translatable="yes">Audio Encode Pipeline</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwEntryRow" id="muxer_row">
+            <property name="tooltip-text" translatable="yes">Pipeline Description to mux audio and video.
+Usually put muxer with options.</property>
+            <property name="title" translatable="yes">Muxer Pipeline</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwEntryRow" id="extension_row">
+            <property name="title" translatable="yes">File Extension</property>
+          </object>
+        </child>
+
+      </object>
+    </child>
+
+    <responses>
+      <response id="yes" appearance="suggested" translatable="yes">Yes</response>
+      <response id="no" translatable="yes">No</response>
+    </responses>
+
+  </object> <!-- AdwPreferencesDialog -->
+</interface>
+

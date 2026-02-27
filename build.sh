@@ -4,7 +4,9 @@
 
 gnome-extensions pack \
     --extra-source=parts/ \
+    --extra-source=prefsParts/ \
     --extra-source=data/icons/ \
+    --extra-source=data/ui/ \
     --schema=schemas/screencast.extra.feature@wissle.me.gschema.xml \
     --podir=po/ \
     --force
