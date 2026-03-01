@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Screencast extra Feature 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-21 23:33+0900\n"
+"POT-Creation-Date: 2026-03-29 10:08+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,10 +16,6 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
-
-#: prefs.js:31
-msgid "General"
-msgstr ""
 
 #: parts/partaudio.js:113
 msgid "Desktop"
@@ -57,4 +53,122 @@ msgstr ""
 
 #: parts/partpref.js:60
 msgid "Screencast extra feature preferences"
+msgstr ""
+
+#: prefsParts/partpipeline.js:181
+msgid "Copy"
+msgstr ""
+
+#: prefsParts/partpipeline.js:182
+msgid "Remove"
+msgstr ""
+
+#: prefsParts/partpipeline.js:185
+msgid "Move Up"
+msgstr ""
+
+#: prefsParts/partpipeline.js:188
+msgid "Move Down"
+msgstr ""
+
+#: schemas/screencast.extra.feature@wissle.me.gschema.xml:83
+msgid ""
+"Pipeline configures to use. Configures are tried in order. [ (name, video "
+"preparation, video preparation resizing, video encoding, audio encoding, "
+"muxer, file extension), ... ]"
+msgstr ""
+
+#: data/ui/preferencePipeline.ui:7
+msgid "Pipeline"
+msgstr ""
+
+#: data/ui/preferencePipeline.ui:12
+msgid "Pipeline Configure"
+msgstr ""
+
+#: data/ui/preferencePipeline.ui:13
+msgid ""
+"Determines how screencasts are encoded. Contains encoding options.\n"
+"Each will be tried out in order."
+msgstr ""
+
+#: data/ui/preferencePipeline.ui:24
+msgid "Add Pipeline Configure"
+msgstr ""
+
+#: data/ui/preferencePipeline.ui:32
+msgid "Reset Pipeline Configures to Default"
+msgstr ""
+
+#: data/ui/preferencePipeline.ui:46
+msgid "Reset to default?"
+msgstr ""
+
+#: data/ui/preferencePipeline.ui:47
+msgid ""
+"This will reset pipeline configures as default. All your changes are lost."
+msgstr ""
+
+#: data/ui/preferencePipeline.ui:49
+#: data/ui/preferencePipelineConfigureDialog.ui:59
+msgid "Yes"
+msgstr ""
+
+#: data/ui/preferencePipeline.ui:50
+#: data/ui/preferencePipelineConfigureDialog.ui:60
+msgid "No"
+msgstr ""
+
+#: data/ui/preferencePipelineConfigureDialog.ui:13
+msgid "Configure Name"
+msgstr ""
+
+#: data/ui/preferencePipelineConfigureDialog.ui:18
+msgid "Pipeline Description to prepare video, before encoding."
+msgstr ""
+
+#: data/ui/preferencePipelineConfigureDialog.ui:19
+msgid "Video Preparation Pipeline"
+msgstr ""
+
+#: data/ui/preferencePipelineConfigureDialog.ui:24
+msgid "Pipeline Description to resize and prepare video, before encoding."
+msgstr ""
+
+#: data/ui/preferencePipelineConfigureDialog.ui:25
+msgid "Video Preparation Pipeline with Resize"
+msgstr ""
+
+#: data/ui/preferencePipelineConfigureDialog.ui:30
+msgid ""
+"Pipeline Description to encode video, before mux.\n"
+"Usually put encoder with options."
+msgstr ""
+
+#: data/ui/preferencePipelineConfigureDialog.ui:32
+msgid "Video Encode Pipeline"
+msgstr ""
+
+#: data/ui/preferencePipelineConfigureDialog.ui:37
+msgid ""
+"Pipeline Description to encode audio, before mux.\n"
+"Usually put encoder with options."
+msgstr ""
+
+#: data/ui/preferencePipelineConfigureDialog.ui:39
+msgid "Audio Encode Pipeline"
+msgstr ""
+
+#: data/ui/preferencePipelineConfigureDialog.ui:44
+msgid ""
+"Pipeline Description to mux audio and video.\n"
+"Usually put muxer with options."
+msgstr ""
+
+#: data/ui/preferencePipelineConfigureDialog.ui:46
+msgid "Muxer Pipeline"
+msgstr ""
+
+#: data/ui/preferencePipelineConfigureDialog.ui:51
+msgid "File Extension"
 msgstr ""
