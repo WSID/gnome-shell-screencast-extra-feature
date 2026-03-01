@@ -42,12 +42,7 @@ export default class ScreencastExtraFeaturePreferences extends ExtensionPreferen
         icon_theme.add_search_path(`${this.path}/icons`);
 
         this._partPipeline = new PartPipeline.PartPipeline(window, this.path, this._settings);
-
-        let generalPage = new Adw.PreferencesPage({
-            title: gettext("General")
-        });
         
-        window.add(generalPage);
         window.add(this._partPipeline.page);
     }
 }
