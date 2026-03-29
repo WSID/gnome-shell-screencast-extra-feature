@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: screencast.extra.feature 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-21 23:33+0900\n"
+"POT-Creation-Date: 2026-03-29 09:57+0900\n"
 "PO-Revision-Date: 2025-10-26 17:51+0900\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -16,10 +16,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-
-#: prefs.js:31
-msgid "General"
-msgstr ""
 
 #: parts/partaudio.js:113
 msgid "Desktop"
@@ -66,3 +62,130 @@ msgstr ""
 #: parts/partpref.js:60
 msgid "Screencast extra feature preferences"
 msgstr "Screencast 추가 기능 설정"
+
+#: prefsParts/partpipeline.js:181
+msgid "Copy"
+msgstr "복사"
+
+#: prefsParts/partpipeline.js:182
+msgid "Remove"
+msgstr "제거"
+
+#: prefsParts/partpipeline.js:185
+msgid "Move Up"
+msgstr "위로 이동"
+
+#: prefsParts/partpipeline.js:188
+msgid "Move Down"
+msgstr "아래로 이동"
+
+#: schemas/screencast.extra.feature@wissle.me.gschema.xml:83
+msgid ""
+"Pipeline configures to use. Configures are tried in order. [ (name, video "
+"preparation, video preparation resizing, video encoding, audio encoding, "
+"muxer, file extension), ... ]"
+msgstr ""
+"사용할 파이프라인을 설정합니다. 설정들은 순서대로 시도됩니다. [ (이름, 비디오 준비, 크기 조정 비디오 준비, 비디오 부호화, 오디오 부호화, 먹서, 파일 확장자) ]"
+
+#: data/ui/preferencePipeline.ui:7
+msgid "Pipeline"
+msgstr "파이프라인"
+
+#: data/ui/preferencePipeline.ui:12
+msgid "Pipeline Configure"
+msgstr "파이프라인 설정"
+
+#: data/ui/preferencePipeline.ui:13
+msgid ""
+"Determines how screencasts are encoded. Contains encoding options.\n"
+"Each will be tried out in order."
+msgstr ""
+"스크린캐스트가 어떻게 인코딩 될지 결정합니다. 인코딩 옵션을 포함합니다.\n"
+"순서대로 시도됩니다."
+
+#: data/ui/preferencePipeline.ui:24
+msgid "Add Pipeline Configure"
+msgstr "파이프라인 설정 추가"
+
+#: data/ui/preferencePipeline.ui:32
+msgid "Reset Pipeline Configures to Default"
+msgstr "기본값으로 파이프라인 설정을 초기화"
+
+#: data/ui/preferencePipeline.ui:46
+msgid "Reset to default?"
+msgstr "기본값으로 초기화 합니까?"
+
+#: data/ui/preferencePipeline.ui:47
+msgid ""
+"This will reset pipeline configures as default. All your changes are lost."
+msgstr "파이프라인 설정을 기본값으로 초기화합니다. 모든 변경점들이 없어집니다."
+
+#: data/ui/preferencePipeline.ui:49
+#: data/ui/preferencePipelineConfigureDialog.ui:59
+msgid "Yes"
+msgstr "예"
+
+#: data/ui/preferencePipeline.ui:50
+#: data/ui/preferencePipelineConfigureDialog.ui:60
+msgid "No"
+msgstr "아니오"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:13
+msgid "Configure Name"
+msgstr "설정 이름"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:18
+msgid "Pipeline Description to prepare video, before encoding."
+msgstr "인코딩 전에, 비디오를 준비하는 파이프라인 설명입니다."
+
+#: data/ui/preferencePipelineConfigureDialog.ui:19
+msgid "Video Preparation Pipeline"
+msgstr "비디오 준비 파이프라인"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:24
+msgid "Pipeline Description to resize and prepare video, before encoding."
+msgstr "인코딩 전에, 비디오를 크기 조절하고 준비하는 파이프라인 설명입니다."
+
+#: data/ui/preferencePipelineConfigureDialog.ui:25
+msgid "Video Preparation Pipeline with Resize"
+msgstr "크기 조절 비디오 준비 파이프라인"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:30
+msgid ""
+"Pipeline Description to encode video, before mux.\n"
+"Usually put encoder with options."
+msgstr ""
+"Mux 전에, 비디오를 인코딩 하는 파이프라인 설명입니다.\n"
+"옵션과 함께 인코더를 기재합니다."
+
+#: data/ui/preferencePipelineConfigureDialog.ui:32
+msgid "Video Encode Pipeline"
+msgstr "비디오 인코딩 파이프라인"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:37
+msgid ""
+"Pipeline Description to encode audio, before mux.\n"
+"Usually put encoder with options."
+msgstr ""
+"Mux 전에, 오디오를 인코딩 하는 파이프라인 설명입니다.\n"
+"옵션과 함께 인코더를 기재합니다."
+
+#: data/ui/preferencePipelineConfigureDialog.ui:39
+msgid "Audio Encode Pipeline"
+msgstr "오디오 인코딩 파이프라인"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:44
+msgid ""
+"Pipeline Description to mux audio and video.\n"
+"Usually put muxer with options."
+msgstr ""
+"오디오와 비디오를 Mux 하기 위한 파이프라인 설명입니다.\n"
+"옵션과 함께 Muxer를 기재합니다."
+
+#: data/ui/preferencePipelineConfigureDialog.ui:46
+msgid "Muxer Pipeline"
+msgstr "Muxer 파이프라인"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:51
+msgid "File Extension"
+msgstr "파일 확장자"
