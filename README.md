@@ -1,4 +1,4 @@
-# Screencst with Extra feature.
+# Screencast with Extra feature.
 
 Adds extra features in gnome-shell's built-in screen cast feature.
 
