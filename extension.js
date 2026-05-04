@@ -58,8 +58,6 @@ import * as PartPref from "./parts/partpref.js";
  * @returns {string} The new file path.
  */
 function fixFilePath(filepath, extension) {
-    console.log(`Fix file path: ${filepath}`);
-
     // Split extension from file name
     var newFileStem = filepath;
     let lastPoint = filepath.lastIndexOf('.')
@@ -67,8 +65,6 @@ function fixFilePath(filepath, extension) {
         newFileStem = filepath.substring(0, lastPoint);
     }
     let newFilepath = `${newFileStem}.${extension}`;
-
-    console.log(`- Into : ${newFilepath}`);
 
     // Rename the file. (using GLib.)
     GLib.rename(filepath, newFilepath);
@@ -344,13 +340,6 @@ export default class ScreencastExtraFeature extends Extension {
                         configure.videoPrepDownsizePipeline ||
                         configure.videoPrepPipeline;
                 }
-
-                console.log(`Tried configure [${this._pipelineConfigureIndex}] ${configure.id}`);
-                console.log(`- VIDEO_PREP: ${videoPrep}`);
-                console.log(`- VIDEO: ${configure.videoPipeline}`);
-                console.log(`- AUDIO: ${configure.audioPipeline}`);
-                console.log(`- MUXER: ${configure.muxer}`);
-                console.log(`- ERROR: ${e}`);
             }
         }
 
@@ -381,16 +370,11 @@ export default class ScreencastExtraFeature extends Extension {
             let checkResults = await Promise.all(promises);
             this._pipelineConfigures = pipelineConfigures.filter((_, index) => checkResults[index]);
         } catch (e) {
-            console.log(`Configuration filtering fails: ${e}`);
-            console.log(`Fallback to use all configures.`);
+            console.warn(`Configuration filtering fails: ${e}`);
+            console.warn("Fallback to use all configures.");
             this._pipelineConfigures = pipelineConfigures;
         }
         this._pipelineConfigureIndex = 0;
-
-        console.log("Using following configure...");
-        for (let conf of this._pipelineConfigures) {
-            console.log(`- ${conf.id}`)
-        }
     }
 
     /**
