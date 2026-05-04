@@ -1,3 +1,13 @@
+## 0.4
+
+Feature Release
+
+- Preferences: Added Pipeline Preferences.
+  Not actually user-friendly, but this adds some customization.
+
+- Translation: Russian and Bulgarian translation is updated, thanks to @pacu23 .
+  (pacu23@gmail.com)
+
 ## 0.3.1
 
 Minor fix Release
