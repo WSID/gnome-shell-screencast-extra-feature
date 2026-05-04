@@ -1,3 +1,12 @@
+## 0.4.1
+
+Quick fix Release
+
+- Fixes to comply gnome-shell extension review guidelines.
+  - Renamed schema name to its own schema ID.
+  - Clean up for both extensions and preferences.
+  - Removed some logging.
+
 ## 0.4
 
 Feature Release
