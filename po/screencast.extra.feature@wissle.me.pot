@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Screencast extra Feature 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-29 10:08+0900\n"
+"POT-Creation-Date: 2026-05-25 17:10+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,6 +16,22 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: parts/partadjust.js:131
+msgid "Additional Video Options"
+msgstr ""
+
+#: parts/partadjust.js:147
+msgid "Framerate"
+msgstr ""
+
+#: parts/partadjust.js:156
+msgid "Downsize"
+msgstr ""
+
+#: parts/partadjust.js:165
+msgid "Screencast extra feature preferences"
+msgstr ""
 
 #: parts/partaudio.js:113
 msgid "Desktop"
@@ -25,53 +41,49 @@ msgstr ""
 msgid "Mic"
 msgstr ""
 
-#: parts/partaudio.js:315
+#: parts/partaudio.js:314
 #, javascript-format
 msgid ""
 "Record Desktop Audio\n"
-"%s: %s"
+"%s"
 msgstr ""
 
-#: parts/partaudio.js:319
+#: parts/partaudio.js:318
 msgid ""
 "Cannot record Desktop Audio.\n"
 "No audio device."
 msgstr ""
 
-#: parts/partaudio.js:339
+#: parts/partaudio.js:337
 #, javascript-format
 msgid ""
 "Record Mic Audio\n"
-"%s: %s"
+"%s"
 msgstr ""
 
-#: parts/partaudio.js:343
+#: parts/partaudio.js:341
 msgid ""
 "Cannot record Mic Audio.\n"
 "No audio device."
 msgstr ""
 
-#: parts/partpref.js:60
-msgid "Screencast extra feature preferences"
-msgstr ""
-
-#: prefsParts/partpipeline.js:181
+#: prefsParts/partpipeline.js:226
 msgid "Copy"
 msgstr ""
 
-#: prefsParts/partpipeline.js:182
+#: prefsParts/partpipeline.js:227
 msgid "Remove"
 msgstr ""
 
-#: prefsParts/partpipeline.js:185
+#: prefsParts/partpipeline.js:230
 msgid "Move Up"
 msgstr ""
 
-#: prefsParts/partpipeline.js:188
+#: prefsParts/partpipeline.js:233
 msgid "Move Down"
 msgstr ""
 
-#: schemas/screencast.extra.feature@wissle.me.gschema.xml:83
+#: schemas/org.gnome.shell.extensions.screencastExtraFeature.gschema.xml:83
 msgid ""
 "Pipeline configures to use. Configures are tried in order. [ (name, video "
 "preparation, video preparation resizing, video encoding, audio encoding, "
@@ -92,83 +104,85 @@ msgid ""
 "Each will be tried out in order."
 msgstr ""
 
-#: data/ui/preferencePipeline.ui:24
-msgid "Add Pipeline Configure"
-msgstr ""
-
-#: data/ui/preferencePipeline.ui:32
-msgid "Reset Pipeline Configures to Default"
-msgstr ""
-
-#: data/ui/preferencePipeline.ui:46
+#: data/ui/preferencePipeline.ui:20
 msgid "Reset to default?"
 msgstr ""
 
-#: data/ui/preferencePipeline.ui:47
+#: data/ui/preferencePipeline.ui:21
 msgid ""
 "This will reset pipeline configures as default. All your changes are lost."
 msgstr ""
 
-#: data/ui/preferencePipeline.ui:49
-#: data/ui/preferencePipelineConfigureDialog.ui:59
+#: data/ui/preferencePipeline.ui:23
+#: data/ui/preferencePipelineConfigureDialog.ui:58
 msgid "Yes"
 msgstr ""
 
-#: data/ui/preferencePipeline.ui:50
-#: data/ui/preferencePipelineConfigureDialog.ui:60
+#: data/ui/preferencePipeline.ui:24
+#: data/ui/preferencePipelineConfigureDialog.ui:59
 msgid "No"
 msgstr ""
 
-#: data/ui/preferencePipelineConfigureDialog.ui:13
+#: data/ui/preferencePipelineButtons.ui:12
+#: data/ui/preferencePipelineButtons46.ui:26
+msgid "Add Pipeline Configure"
+msgstr ""
+
+#: data/ui/preferencePipelineButtons.ui:20
+#: data/ui/preferencePipelineButtons46.ui:44
+msgid "Reset Pipeline Configures to Default"
+msgstr ""
+
+#: data/ui/preferencePipelineConfigureDialog.ui:12
 msgid "Configure Name"
 msgstr ""
 
-#: data/ui/preferencePipelineConfigureDialog.ui:18
+#: data/ui/preferencePipelineConfigureDialog.ui:17
 msgid "Pipeline Description to prepare video, before encoding."
 msgstr ""
 
-#: data/ui/preferencePipelineConfigureDialog.ui:19
+#: data/ui/preferencePipelineConfigureDialog.ui:18
 msgid "Video Preparation Pipeline"
 msgstr ""
 
-#: data/ui/preferencePipelineConfigureDialog.ui:24
+#: data/ui/preferencePipelineConfigureDialog.ui:23
 msgid "Pipeline Description to resize and prepare video, before encoding."
 msgstr ""
 
-#: data/ui/preferencePipelineConfigureDialog.ui:25
+#: data/ui/preferencePipelineConfigureDialog.ui:24
 msgid "Video Preparation Pipeline with Resize"
 msgstr ""
 
-#: data/ui/preferencePipelineConfigureDialog.ui:30
+#: data/ui/preferencePipelineConfigureDialog.ui:29
 msgid ""
 "Pipeline Description to encode video, before mux.\n"
 "Usually put encoder with options."
 msgstr ""
 
-#: data/ui/preferencePipelineConfigureDialog.ui:32
+#: data/ui/preferencePipelineConfigureDialog.ui:31
 msgid "Video Encode Pipeline"
 msgstr ""
 
-#: data/ui/preferencePipelineConfigureDialog.ui:37
+#: data/ui/preferencePipelineConfigureDialog.ui:36
 msgid ""
 "Pipeline Description to encode audio, before mux.\n"
 "Usually put encoder with options."
 msgstr ""
 
-#: data/ui/preferencePipelineConfigureDialog.ui:39
+#: data/ui/preferencePipelineConfigureDialog.ui:38
 msgid "Audio Encode Pipeline"
 msgstr ""
 
-#: data/ui/preferencePipelineConfigureDialog.ui:44
+#: data/ui/preferencePipelineConfigureDialog.ui:43
 msgid ""
 "Pipeline Description to mux audio and video.\n"
 "Usually put muxer with options."
 msgstr ""
 
-#: data/ui/preferencePipelineConfigureDialog.ui:46
+#: data/ui/preferencePipelineConfigureDialog.ui:45
 msgid "Muxer Pipeline"
 msgstr ""
 
-#: data/ui/preferencePipelineConfigureDialog.ui:51
+#: data/ui/preferencePipelineConfigureDialog.ui:50
 msgid "File Extension"
 msgstr ""
