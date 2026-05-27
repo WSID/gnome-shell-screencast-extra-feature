@@ -1,3 +1,12 @@
+## 0.4.2
+
+UI and Minor fix Release
+
+- All options placed into menu button to get space for other UI Elements.
+- Internal changes
+  - Removed check configures done via `gst-inspect-1.0` which introduced in 0.2.
+    This check would make some system laggy at start.
+
 ## 0.4.1
 
 Quick fix Release
