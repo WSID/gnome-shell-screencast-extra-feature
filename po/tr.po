@@ -1,0 +1,210 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-25 17:10+0900\n"
+"PO-Revision-Date: 2026-07-07 16:20+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: tr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.9\n"
+"X-Poedit-Basepath: .\n"
+
+#: parts/partadjust.js:131
+msgid "Additional Video Options"
+msgstr ""
+
+#: parts/partadjust.js:147
+msgid "Framerate"
+msgstr "Kare hızı"
+
+#: parts/partadjust.js:156
+msgid "Downsize"
+msgstr "Küçültme"
+
+#: parts/partadjust.js:165
+msgid "Screencast extra feature preferences"
+msgstr "Tercihler"
+
+#: parts/partaudio.js:113
+msgid "Desktop"
+msgstr "Masaüstü"
+
+#: parts/partaudio.js:127
+msgid "Mic"
+msgstr "Mikrofon"
+
+#: parts/partaudio.js:314
+#, javascript-format
+msgid ""
+"Record Desktop Audio\n"
+"%s"
+msgstr ""
+"Masaüstü Sesini Kaydet\n"
+"%s"
+
+#: parts/partaudio.js:318
+msgid ""
+"Cannot record Desktop Audio.\n"
+"No audio device."
+msgstr ""
+"Masaüstü sesini kaydedemiyor.\r\n"
+"Ses cihazı yok."
+
+#: parts/partaudio.js:337
+#, javascript-format
+msgid ""
+"Record Mic Audio\n"
+"%s"
+msgstr ""
+"Mikrofon Sesini Kaydet\r\n"
+"%s"
+
+#: parts/partaudio.js:341
+msgid ""
+"Cannot record Mic Audio.\n"
+"No audio device."
+msgstr ""
+"Mikrofon sesini kaydedemiyor.\r\n"
+"Ses cihazı yok."
+
+#: prefsParts/partpipeline.js:226
+msgid "Copy"
+msgstr "Kopyala"
+
+#: prefsParts/partpipeline.js:227
+msgid "Remove"
+msgstr "Sil"
+
+#: prefsParts/partpipeline.js:230
+msgid "Move Up"
+msgstr "Yukarı Taşı"
+
+#: prefsParts/partpipeline.js:233
+msgid "Move Down"
+msgstr "Aşağı Taşı"
+
+#: schemas/org.gnome.shell.extensions.screencastExtraFeature.gschema.xml:83
+msgid ""
+"Pipeline configures to use. Configures are tried in order. [ (name, video "
+"preparation, video preparation resizing, video encoding, audio encoding, "
+"muxer, file extension), ... ]"
+msgstr ""
+"İş Akışı kullanılacak yapılandırmayı belirler. Yapılandırmalar sırayla "
+"denenir. [ (ad, video hazırlama, video hazırlama yeniden boyutlandırma, "
+"video kodlama, ses kodlama, muxer, dosya uzantısı), ... ]"
+
+#: data/ui/preferencePipeline.ui:7
+msgid "Pipeline"
+msgstr "İş Akışı"
+
+#: data/ui/preferencePipeline.ui:12
+msgid "Pipeline Configure"
+msgstr "İş Akışı Yapılandırması"
+
+#: data/ui/preferencePipeline.ui:13
+msgid ""
+"Determines how screencasts are encoded. Contains encoding options.\n"
+"Each will be tried out in order."
+msgstr ""
+"Ekran kayıtlarının nasıl kodlanacağını belirler. Kodlama seçeneklerini "
+"içerir.\n"
+"Her biri sırayla denenecektir."
+
+#: data/ui/preferencePipeline.ui:20
+msgid "Reset to default?"
+msgstr "Varsayılana Sıfırlamak İstiyor Musunuz?"
+
+#: data/ui/preferencePipeline.ui:21
+msgid ""
+"This will reset pipeline configures as default. All your changes are lost."
+msgstr ""
+"Bu seçenek tüm İş Akışı yapılandırmalarını varsayılana sıfırlayacaktır. "
+"Tüm değişiklikleriniz kaybolacak."
+
+#: data/ui/preferencePipeline.ui:23
+#: data/ui/preferencePipelineConfigureDialog.ui:58
+msgid "Yes"
+msgstr "Evet"
+
+#: data/ui/preferencePipeline.ui:24
+#: data/ui/preferencePipelineConfigureDialog.ui:59
+msgid "No"
+msgstr "Hayır"
+
+#: data/ui/preferencePipelineButtons.ui:12
+#: data/ui/preferencePipelineButtons46.ui:26
+msgid "Add Pipeline Configure"
+msgstr "İş Akışı Yapılandırması Ekle"
+
+#: data/ui/preferencePipelineButtons.ui:20
+#: data/ui/preferencePipelineButtons46.ui:44
+msgid "Reset Pipeline Configures to Default"
+msgstr "İş Akışı Yapılandırmalarını Sıfırla"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:12
+msgid "Configure Name"
+msgstr "Yapılandırma Adı"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:17
+msgid "Pipeline Description to prepare video, before encoding."
+msgstr "Kodlama öncesinde video hazırlamaya yönelik İş Akışı açıklaması."
+
+#: data/ui/preferencePipelineConfigureDialog.ui:18
+msgid "Video Preparation Pipeline"
+msgstr "Video Hazırlama İş Akışı"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:23
+msgid "Pipeline Description to resize and prepare video, before encoding."
+msgstr ""
+"Kodlama öncesi, videoyu hazırlamak ve yeniden boyutlandırmak için İş "
+"Akışı Açıklaması."
+
+#: data/ui/preferencePipelineConfigureDialog.ui:24
+msgid "Video Preparation Pipeline with Resize"
+msgstr "Yeniden boyutlandırmalı video hazırlama İş Akışı"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:29
+msgid ""
+"Pipeline Description to encode video, before mux.\n"
+"Usually put encoder with options."
+msgstr ""
+"Video kodlaması için işlem hattı açıklaması (birleştirici işleminden "
+"önce).\n"
+"Genellikle kodlayıcı seçenekleriyle birlikte eklenir."
+
+#: data/ui/preferencePipelineConfigureDialog.ui:31
+msgid "Video Encode Pipeline"
+msgstr "Video Kodlama İş Akışı"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:36
+msgid ""
+"Pipeline Description to encode audio, before mux.\n"
+"Usually put encoder with options."
+msgstr ""
+"Çoklama işleminden önce sesin kodlanması için İş Akışı açıklaması.\n"
+"Genellikle kodlayıcı seçenekleriyle birlikte eklenir."
+
+#: data/ui/preferencePipelineConfigureDialog.ui:38
+msgid "Audio Encode Pipeline"
+msgstr "Ses Kodlama İş Akışı"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:43
+msgid ""
+"Pipeline Description to mux audio and video.\n"
+"Usually put muxer with options."
+msgstr ""
+"Ses ve video dosyalarını birleştirmek için kullanılan işlem hattı "
+"açıklaması.\n"
+"Genellikle seçeneklerle birlikte birleştirici kullanılır."
+
+#: data/ui/preferencePipelineConfigureDialog.ui:45
+msgid "Muxer Pipeline"
+msgstr "Birleştirici İş Akışı"
+
+#: data/ui/preferencePipelineConfigureDialog.ui:50
+msgid "File Extension"
+msgstr "Dosya Uzantısı"
