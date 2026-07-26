@@ -1,3 +1,15 @@
+## 0.4.3
+
+Minor update Release
+
+- Doc: Fix typo in gnome-extension install command in README.md, thanks to
+  @sevaseva (vlotoshnikov@gmail.com)
+- Translation: Turkish translation is updated, thansk to Ülgen Bilgin.
+- Config: Updated options to nvh264enc, to reduce stuttering and video file
+  size.
+
+Note: Recently, I have very busy days. Further updates won't be on soon.
+
 ## 0.4.2
 
 UI and Minor fix Release
