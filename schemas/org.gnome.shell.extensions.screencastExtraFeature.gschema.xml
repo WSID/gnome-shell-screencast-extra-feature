@@ -10,7 +10,7 @@
             "hwenc-cuda-h264-nvenc",
             "cudaupload ! cudaconvert",
             "cudaupload ! cudaconvertscale",
-            "nvh264enc ! queue ! h264parse",
+            "nvh264enc rc-mode=constqp multi-pass=disabled ! queue ! h264parse",
             "avenc_aac ! queue",
             "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
             "mp4"
@@ -19,7 +19,7 @@
             "hwenc-gl-h264-nvenc",
             "cudaupload",
             "glupload ! glcolorconvert ! glcolorscale",
-            "nvh264enc ! queue ! h264parse",
+            "nvh264enc rc-mode=constqp multi-pass=disabled ! queue ! h264parse",
             "avenc_aac ! queue",
             "mp4mux fragment-duration=500 fragment-mode=first-moov-then-finalise",
             "mp4"
