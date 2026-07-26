@@ -63,8 +63,38 @@ function fixFilePath(filepath, extension) {
     }
     let newFilepath = `${newFileStem}.${extension}`;
 
-    // Rename the file. (using GLib.)
-    GLib.rename(filepath, newFilepath);
+    if (filepath != newFilepath) {
+        // Rename the file. (using GLib.)
+        GLib.rename(filepath, newFilepath);
+
+        // Update Recent Items.
+        // Directly access the list. Cannot use Gtk.RecentManager.
+
+        // Copied from gnome-shell source.
+        const recentListFile =
+            GLib.build_filenamev([GLib.get_user_data_dir(), "recently-used.xbel"]);
+        const recentList = new GLib.BookmarkFile();
+        try {
+            recentList.load_from_file(recentFile);
+        } catch (e) {
+            console.warn(`Could not open recent list: ${e.message}`);
+        }
+
+        try {
+            const uri = Gio.File.new_for_path(filepath).get_uri();
+            const newUri = Gio.File.new_for_path(newFilepath).get_uri();
+
+            if (recentList.has_item(uri)) {
+                recentList.move_item(uri, newUri);
+            } else {
+                recentList.add_application(newUri, GLib.get_prgname(), 'gio open %u');
+            }
+            recentList.to_file(recentListFile);
+        } catch (e) {
+            console.warn(`Could not save recent list: ${e.message}`);
+        }
+    }
+
     return newFilepath;
 }
 
