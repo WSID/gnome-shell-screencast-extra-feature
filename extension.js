@@ -249,7 +249,7 @@ export default class ScreencastExtraFeature extends Extension {
     async _screencastCommonAsync(width, height, options, body) {
         this._partIndicator.onPipelineSetupBegin();
         options['framerate'] = new GLib.Variant('i', this._partAdjust.framerate);
-        while (this._pipelineConfigureIndex <= this._pipelineConfigures.length) {
+        while (this._pipelineConfigureIndex < this._pipelineConfigures.length) {
             let configure = this._pipelineConfigures[this._pipelineConfigureIndex];
 
             let pipeline = this._makePipelineString(configure, width, height);
