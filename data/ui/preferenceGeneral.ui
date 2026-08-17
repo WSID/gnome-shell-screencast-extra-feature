@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<interface domain="screencsat.extra.feature@wissle.me">
+  <requires lib="Gtk" version="4.0"/>
+  <requires lib="Adw" version="1.0"/>
+  <object class="AdwPreferencesPage" id="page">
+    <property name="name">general</property>
+    <property name="title" translatable="yes" context="preferences">General</property>
+    <property name="icon-name">settings-symbolic</property>
+
+    <child>
+      <object class="ListDefaultGroup" id="framerates_group">
+        <property name="title" translatable="yes">Framerate</property>
+        <property name="description" translatable="yes">Selectable Framerates. Supports up to 60 Hz.
+Double click to choose which would be selected at start.</property>
+        <property name="add-adjustment">
+          <object class="GtkAdjustment" id="framerates_list_add_adjustment">
+            <property name="lower">1</property>
+            <property name="upper">60</property>
+            <property name="step-increment">1</property>
+            <property name="value">30</property>
+          </object>
+        </property>
+        <property name="default-item">30</property>
+      </object>
+    </child>
+
+    <child>
+      <object class="ListDefaultGroup" id="downsize_ratios_group">
+        <property name="title" translatable="yes">Downsize</property>
+        <property name="description" translatable="yes">Selectable Downsize Ratio.
+Double click to choose which would be selected at start.</property>
+        <property name="add-adjustment">
+          <object class="GtkAdjustment" id="downsize_ratios_list_add_adjustment">
+            <property name="lower">1</property>
+            <property name="upper">100</property>
+            <property name="step-increment">1</property>
+            <property name="value">100</property>
+          </object>
+        </property>
+        <property name="default-item">1.00</property>
+      </object>
+    </child>
+  </object>
+
+</interface>

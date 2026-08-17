@@ -3,6 +3,44 @@
   <schema
     id="org.gnome.shell.extensions.screencastExtraFeature"
     path="/org/gnome/shell/extensions/screencastExtraFeature/">
+
+
+    <key name="framerates" type="aq">
+      <description>
+        Framerate to choose. (Unit in Hz)
+        Can't be above of 60 Hz.
+      </description>
+      <default>
+        [15, 24, 30, 60]
+      </default>
+    </key>
+
+    <key name="default-framerate" type="q">
+      <description>
+        Default framerate chosen. (Unit in Hz)
+        Can't be above of 60 Hz.
+      </description>
+      <default>30</default>
+    </key>
+
+    <key name="downsize-ratios" type="ad">
+      <description>
+        Downsize ratio to choose. (Unit in percent)
+        "100" means no downsize.
+      </description>
+      <default>
+        [33, 50, 75, 100]
+      </default>
+    </key>
+
+    <key name="default-downsize-ratio" type="d">
+      <description>
+        Default downsize ratio. (Unit in percent)
+        "100" means no downsize.
+      </description>
+      <default>100</default>
+    </key>
+
     <key name="pipeline-configures" type="a(sssssss)">
       <default>
         [

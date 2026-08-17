@@ -31,8 +31,11 @@ import * as PartBase from "./partbase.js"
 
 
 // Constants
-const DOWNSIZE_RATIO = [1.00, 0.75, 0.50, 0.33];
-const FRAMERATES = [15, 24, 30, 60];
+const KEY_FRAMERATES = "framerates";
+const KEY_DEFAULT_FRAMERATE = "default-framerate";
+
+const KEY_DOWNSIZE_RATIOS = "downsize-ratios";
+const KEY_DEFAULT_DOWNSIZE_RATIOS = "default-downsize-ratio";
 
 
 
@@ -50,6 +53,7 @@ class SelectSubMenuMenuItem extends PopupMenu.PopupSubMenuMenuItem {
      * @param {((T) => string)?} itemLabelling Labelling of each item, or null for toString().
      */
     _init(title, items, selectedItem, itemLabelling) {
+        this._title = title;
 
         this._selectedItem = selectedItem;
         if (itemLabelling)
@@ -75,6 +79,7 @@ class SelectSubMenuMenuItem extends PopupMenu.PopupSubMenuMenuItem {
         this.connect("destroy", () => {
             this._itemLabelling = null;
             this._selectedItem = null;
+            this._title = null;
         });
     }
 
@@ -82,10 +87,14 @@ class SelectSubMenuMenuItem extends PopupMenu.PopupSubMenuMenuItem {
      * Selected Item.
      *
      * @type {T}
-     * @readonly
      */
     get selectedItem () {
         return this._selectedItem;
+    }
+
+    set selectedItem (value) {
+        this._selectedItem = value;
+        this.label.text = `${this._title}: ${this._itemLabelling(value)}`;
     }
 });
 
@@ -95,8 +104,9 @@ class SelectSubMenuMenuItem extends PopupMenu.PopupSubMenuMenuItem {
 export class PartAdjust extends PartBase.PartUI {
     constructor(screenshotUI, extension) {
         super(screenshotUI);
+        this.extension = extension;
 
-        let iconsDir = extension.dir.get_child("icons");
+        this._iconsDir = extension.dir.get_child("icons");
 
         // Reference from Main UI.
         this._showPointerButtonContainer = this.screenshotUI._showPointerButtonContainer;
@@ -109,18 +119,12 @@ export class PartAdjust extends PartBase.PartUI {
 
         this._buttonIcon = new St.Icon({
             gicon: new Gio.FileIcon({
-                file: iconsDir.get_child("controls-symbolic.svg")
+                file: this._iconsDir.get_child("controls-symbolic.svg")
             })
         });
 
         this._button.add_child(this._buttonIcon);
         this._showPointerButtonContainer.insert_child_at_index(this._button, 0);
-
-
-        // Popup Menu UI.
-        this._buttonPopupMenu = new PopupMenu.PopupMenu(this._button, 0.5, St.Side.BOTTOM);
-        this._buttonPopupMenu.actor.visible = false;
-        this.screenshotUI.add_child(this._buttonPopupMenu.actor);
 
 
         // Tooltip UI.
@@ -142,39 +146,25 @@ export class PartAdjust extends PartBase.PartUI {
         );
 
 
-        // Menu Items
-        this._framerateItem = new SelectSubMenuMenuItem(
-            gettext("Framerate"),
-            FRAMERATES,
-            30,
-            (rate) => `${rate} FPS`
-        );
+        // Settings
+        this._settings = extension.getSettings("org.gnome.shell.extensions.screencastExtraFeature");
+        this._settings_changed = this._settings.connect(
+            "changed",
+            this.onSettingsChanged.bind(this));
 
-        this._buttonPopupMenu.addMenuItem(this._framerateItem, 0);
-
-        this._downsizeItem = new SelectSubMenuMenuItem(
-            gettext("Downsize"),
-            DOWNSIZE_RATIO,
-            1.00,
-            (ratio) => `${ratio * 100}%`
-        );
-
-        this._buttonPopupMenu.addMenuItem(this._downsizeItem, 1);
-
-        this._prefItem = this._buttonPopupMenu.addAction(
-            gettext("Screencast extra feature preferences"),
-            () => {
-                this.screenshotUI.close();
-                extension.openPreferences();
-            },
-            new Gio.FileIcon({
-                file: iconsDir.get_child("settings-symbolic.svg")
-            })
-        )
+        // submenu
+        this.createPopupMenu();
     }
 
     /** @override */
     destroy() {
+        if (this._settings) {
+            if (this._settings_changed) {
+              this._settings.disconnect(this._settings_changed)
+            }
+            this._settings = null;
+        }
+
         if (this._buttonClicked) {
             this._button.disconnect(this._buttonClicked);
             this._buttonClicked = null;
@@ -186,25 +176,7 @@ export class PartAdjust extends PartBase.PartUI {
                 this._buttonTooltip.destroy();
                 this._buttonTooltip = null;
             }
-
-            if (this._buttonPopupMenu) {
-                this._buttonPopupMenu.removeAll();
-
-                if (this._prefItem) {
-                    this._prefItem = null;
-                }
-
-                if (this._downsizeItem) {
-                    this._downsizeItem = null;
-                }
-
-                if (this._framerateItem) {
-                    this._framerateItem = null;
-                }
-                this.screenshotUI.remove_child(this._buttonPopupMenu.actor);
-                this._buttonPopupMenu.destroy();
-                this._buttonPopupMenu = null;
-            }
+            this.destroyPopupMenu();
         }
 
         if (this._showPointerButtonContainer) {
@@ -222,12 +194,96 @@ export class PartAdjust extends PartBase.PartUI {
             this._showPointerButtonContainer = null;
         }
 
+        this._iconsDir = null;
+        this.extension = null;
         super.destroy();
+    }
+
+    createPopupMenu() {
+        this._buttonPopupMenu = new PopupMenu.PopupMenu(this._button, 0.5, St.Side.BOTTOM);
+        this._buttonPopupMenu.actor.visible = false;
+        this.screenshotUI.add_child(this._buttonPopupMenu.actor);
+
+        const framerates =
+            this._settings.get_value(KEY_FRAMERATES).recursiveUnpack();
+        const default_framerate =
+            this._settings.get_value(KEY_DEFAULT_FRAMERATE).unpack();
+
+        this._framerateItem = new SelectSubMenuMenuItem(
+            gettext("Framerate"),
+            framerates,
+            default_framerate,
+            (rate) => `${rate} FPS`
+        );
+
+        this._buttonPopupMenu.addMenuItem(this._framerateItem, 0);
+
+
+        const downsize_ratios =
+            this._settings.get_value(KEY_DOWNSIZE_RATIOS).recursiveUnpack();
+        const default_downsize_ratio =
+            this._settings.get_value(KEY_DEFAULT_DOWNSIZE_RATIOS).unpack();
+
+        this._downsizeItem = new SelectSubMenuMenuItem(
+            gettext("Downsize"),
+            downsize_ratios,
+            default_downsize_ratio,
+            (ratio) => `${ratio}%`
+        );
+
+        this._buttonPopupMenu.addMenuItem(this._downsizeItem, 1);
+
+        this._prefItem = this._buttonPopupMenu.addAction(
+            gettext("Screencast extra feature preferences"),
+            () => {
+                this.screenshotUI.close();
+                this.extension.openPreferences();
+            },
+            new Gio.FileIcon({
+                file: this._iconsDir.get_child("settings-symbolic.svg")
+            })
+        )
+    }
+
+    destroyPopupMenu() {
+        if (this._buttonPopupMenu) {
+            this._buttonPopupMenu.removeAll();
+
+            this._prefItem = null;
+            this._downsizeItem = null;
+            this._framerateItem = null;
+
+            this.screenshotUI.remove_child(this._buttonPopupMenu.actor);
+            this._buttonPopupMenu.destroy();
+            this._buttonPopupMenu = null;
+        }
     }
 
     /** @override */
     onCastModeSelected(selected) {
         this._button.visible = selected;
+    }
+
+    onSettingsChanged(_settings, key) {
+        switch(key) {
+            case KEY_FRAMERATES:
+            case KEY_DOWNSIZE_RATIOS:
+                this.destroyPopupMenu();
+                this.createPopupMenu();
+                break;
+            case KEY_DEFAULT_FRAMERATE:
+                this._framerateItem.selectedItem =
+                    this._settings
+                        .get_value(KEY_DEFAULT_FRAMERATE)
+                        .unpack();
+                break;
+            case KEY_DEFAULT_DOWNSIZE_RATIOS:
+                this._downsizeItem.selectedItem =
+                    this._settings
+                        .get_value(KEY_DEFAULT_DOWNSIZE_RATIOS)
+                        .unpack();
+                break;
+        }
     }
 
     /**
@@ -245,6 +301,6 @@ export class PartAdjust extends PartBase.PartUI {
      * @readonly
      */
     get downsizeRatio() {
-        return this._downsizeItem.selectedItem;
+        return this._downsizeItem.selectedItem / 100;
     }
 }

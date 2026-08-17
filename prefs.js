@@ -21,6 +21,7 @@
 import Gtk from "gi://Gtk";
 import Adw from "gi://Adw";
 
+import * as PartGeneral from "./prefsParts/partgeneral.js";
 import * as PartPipeline from "./prefsParts/partpipeline.js";
 
 import {ExtensionPreferences, gettext} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
@@ -38,6 +39,7 @@ export default class ScreencastExtraFeaturePreferences extends ExtensionPreferen
         let icon_theme = Gtk.IconTheme.get_for_display(display);
         icon_theme.add_search_path(`${this.path}/icons`);
 
+        this._partGeneral = new PartGeneral.PartGeneral(window, this.path, this._settings);
         this._partPipeline = new PartPipeline.PartPipeline(window, this.path, this._settings);
         
         window.add(this._partPipeline.page);
@@ -52,7 +54,13 @@ export default class ScreencastExtraFeaturePreferences extends ExtensionPreferen
             this._partPipeline.destroy();
         }
 
+        if (this._partGeneral) {
+            this._partGeneral.destroy();
+        }
+
+        this._partGeneral = null;
         this._partPipeline = null;
+
         this._settings = null;
     }
 }
