@@ -104,7 +104,7 @@ export default class ScreencastExtraFeature extends Extension {
         /**
          * @type {Gio.Settings}
          */
-        this._settings = this.getSettings("org.gnome.shell.extensions.screencastExtraFeature");
+        this._settings = this.getSettings();
 
         /** @type {?Configure[]} */
         this._pipelineConfigures = null;

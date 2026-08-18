@@ -31,7 +31,7 @@ export default class ScreencastExtraFeaturePreferences extends ExtensionPreferen
      * @param {Adw.PreferencesWindow} window A window.
      */
     fillPreferencesWindow(window) {
-        this._settings = this.getSettings("org.gnome.shell.extensions.screencastExtraFeature");
+        this._settings = this.getSettings();
         
         // Register icon before creating preference parts.
 

@@ -147,7 +147,7 @@ export class PartAdjust extends PartBase.PartUI {
 
 
         // Settings
-        this._settings = extension.getSettings("org.gnome.shell.extensions.screencastExtraFeature");
+        this._settings = extension.getSettings();
         this._settings_changed = this._settings.connect(
             "changed",
             this.onSettingsChanged.bind(this));
