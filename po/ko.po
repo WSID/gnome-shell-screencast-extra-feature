@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: screencast.extra.feature 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-25 17:10+0900\n"
+"POT-Creation-Date: 2026-08-19 01:02+0900\n"
 "PO-Revision-Date: 2025-10-26 17:51+0900\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,19 +17,19 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: parts/partadjust.js:131
+#: parts/partadjust.js:135
 msgid "Additional Video Options"
 msgstr "추가적인 비디오 옵션"
 
-#: parts/partadjust.js:147
+#: parts/partadjust.js:213 data/ui/preferenceGeneral.ui:12
 msgid "Framerate"
 msgstr "프레임률"
 
-#: parts/partadjust.js:156
+#: parts/partadjust.js:228 data/ui/preferenceGeneral.ui:29
 msgid "Downsize"
 msgstr "크기 감축"
 
-#: parts/partadjust.js:165
+#: parts/partadjust.js:237
 msgid "Screencast extra feature preferences"
 msgstr "Screencast 추가 기능 설정"
 
@@ -75,6 +75,30 @@ msgstr ""
 "마이크 소리를 녹음할 수 없어요.\n"
 "소리 장치가 없어요."
 
+#: prefsParts/partgeneral.js:90
+msgid "No item in list. Will be reset to default if empty."
+msgstr "항목이 아무것도 없습니다. 비어 있으면 기본으로 초기화 됩니다."
+
+#: prefsParts/partgeneral.js:126
+msgid "Add"
+msgstr "추가"
+
+#: prefsParts/partgeneral.js:196 prefsParts/partgeneral.js:210
+msgid "Reset {}"
+msgstr "{} 초기화"
+
+#: prefsParts/partgeneral.js:197
+msgid "This cannot be reverted."
+msgstr "되돌릴 수 없습니다."
+
+#: prefsParts/partgeneral.js:201
+msgid "Cancel"
+msgstr "취소"
+
+#: prefsParts/partgeneral.js:202
+msgid "Ok"
+msgstr "확인"
+
 #: prefsParts/partpipeline.js:226
 msgid "Copy"
 msgstr "복사"
@@ -91,7 +115,23 @@ msgstr "위로 이동"
 msgid "Move Down"
 msgstr "아래로 이동"
 
-#: schemas/org.gnome.shell.extensions.screencastExtraFeature.gschema.xml:83
+#: schemas/org.gnome.shell.extensions.screencastExtraFeature.gschema.xml:9
+msgid "Framerate to choose. (Unit in Hz) Can't be above of 60 Hz."
+msgstr "선택할 수 있는 프레임률입니다. (단위: Hz) 60 Hz 위로 설정할 수 없습니다."
+
+#: schemas/org.gnome.shell.extensions.screencastExtraFeature.gschema.xml:19
+msgid "Default framerate chosen. (Unit in Hz) Can't be above of 60 Hz."
+msgstr "기본으로 선택된 프레임률입니다.. (단위: Hz) 60 Hz 위로 설정할 수 없습니다."
+
+#: schemas/org.gnome.shell.extensions.screencastExtraFeature.gschema.xml:27
+msgid "Downsize ratio to choose. (Unit in percent) \"100\" means no downsize."
+msgstr "선택할 수 있는 크기 감축입니다. (단위: 퍼센트) \"100\"은 크기 감축을 하지 않는 것을 의미합니다."
+
+#: schemas/org.gnome.shell.extensions.screencastExtraFeature.gschema.xml:37
+msgid "Default downsize ratio. (Unit in percent) \"100\" means no downsize."
+msgstr "기본으로 선택된 크기 감축입니다. (단위: 퍼센트) \"100\"은 크기 감축을 하지 않는 것을 의미합니다."
+
+#: schemas/org.gnome.shell.extensions.screencastExtraFeature.gschema.xml:121
 msgid ""
 "Pipeline configures to use. Configures are tried in order. [ (name, video "
 "preparation, video preparation resizing, video encoding, audio encoding, "
@@ -100,6 +140,27 @@ msgstr ""
 "사용할 파이프라인을 설정합니다. 설정들은 순서대로 시도됩니다. [ (이름, 비디"
 "오 준비, 크기 조정 비디오 준비, 비디오 부호화, 오디오 부호화, 먹서, 파일 확장"
 "자) ]"
+
+#: data/ui/preferenceGeneral.ui:7
+msgctxt "preferences"
+msgid "General"
+msgstr "일반"
+
+#: data/ui/preferenceGeneral.ui:13
+msgid ""
+"Selectable Framerates. Supports up to 60 Hz.\n"
+"Double click to choose which would be selected at start."
+msgstr ""
+"선택 할 수 있는 프레임률입니다. 60 Hz까지 지원합니다.\n"
+"더블 클릭으로 처음에 선택될 항목을 설정할 수 있습니다."
+
+#: data/ui/preferenceGeneral.ui:30
+msgid ""
+"Selectable Downsize Ratio.\n"
+"Double click to choose which would be selected at start."
+msgstr ""
+"선택 할 수 있는 크기 감축입니다.\n"
+"더블 클릭으로 처음에 선택될 항목을 설정할 수 있습니다."
 
 #: data/ui/preferencePipeline.ui:7
 msgid "Pipeline"
