@@ -44,58 +44,59 @@ import * as PartIndicator from "./parts/partindicator.js";
  * @property {string} extension Extension of file name.
  */
 
-
 /**
- * Fix file path with wrong extension.
+ * Get correct file path from one of wrong extension.
  *
  * Usually to fix '.unknown' file path.
  *
  * @param {string} filepath A filepath, with worng extension.
  * @param {string} extension Desired extension of the file.
- * @returns {string} The new file path.
+ * @returns {string} The correct file path.
  */
-function fixFilePath(filepath, extension) {
+function getCorrectFilePath(filepath, extension) {
     // Split extension from file name
     var newFileStem = filepath;
-    let lastPoint = filepath.lastIndexOf('.')
+    let lastPoint = filepath.lastIndexOf('.');
     if (lastPoint !== -1) {
         newFileStem = filepath.substring(0, lastPoint);
     }
-    let newFilepath = `${newFileStem}.${extension}`;
+    return `${newFileStem}.${extension}`;
+}
 
-    if (filepath != newFilepath) {
-        // Rename the file. (using GLib.)
-        GLib.rename(filepath, newFilepath);
-
-        // Update Recent Items.
-        // Directly access the list. Cannot use Gtk.RecentManager.
-
-        // Copied from gnome-shell source.
-        const recentListFile =
-            GLib.build_filenamev([GLib.get_user_data_dir(), "recently-used.xbel"]);
-        const recentList = new GLib.BookmarkFile();
-        try {
-            recentList.load_from_file(recentFile);
-        } catch (e) {
-            console.warn(`Could not open recent list: ${e.message}`);
-        }
-
-        try {
-            const uri = Gio.File.new_for_path(filepath).get_uri();
-            const newUri = Gio.File.new_for_path(newFilepath).get_uri();
-
-            if (recentList.has_item(uri)) {
-                recentList.move_item(uri, newUri);
-            } else {
-                recentList.add_application(newUri, GLib.get_prgname(), 'gio open %u');
-            }
-            recentList.to_file(recentListFile);
-        } catch (e) {
-            console.warn(`Could not save recent list: ${e.message}`);
-        }
+/**
+ * Fix file path into given file path, in recent list
+ *
+ * - Rename the file.
+ * - Update recent list.
+ *
+ * @param {string} filepath A filepath, with worng extension.
+ * @param {string} newFilepath Correct filepath.
+ */
+function fixFilePathRecentList(filepath, newFilepath) {
+    // Directly access the list. Cannot use Gtk.RecentManager.
+    // Copied from gnome-shell source.
+    const recentListFile =
+        GLib.build_filenamev([GLib.get_user_data_dir(), "recently-used.xbel"]);
+    const recentList = new GLib.BookmarkFile();
+    try {
+        recentList.load_from_file(recentListFile);
+    } catch (e) {
+        console.warn(`Could not open recent list: ${e.message}`);
     }
 
-    return newFilepath;
+    try {
+        const uri = Gio.File.new_for_path(filepath).get_uri();
+        const newUri = Gio.File.new_for_path(newFilepath).get_uri();
+
+        if (recentList.has_item(uri)) {
+            recentList.move_item(uri, newUri);
+        } else {
+            recentList.add_application(newUri, GLib.get_prgname(), 'gio open %u');
+        }
+        recentList.to_file(recentListFile);
+    } catch (e) {
+        console.warn(`Could not save recent list: ${e.message}`);
+    }
 }
 
 export default class ScreencastExtraFeature extends Extension {
@@ -109,6 +110,12 @@ export default class ScreencastExtraFeature extends Extension {
         /** @type {?Configure[]} */
         this._pipelineConfigures = null;
         this._pipelineConfigureIndex = 0;
+
+        /** @type {?[string, string]} */
+        this._filepathToFix = null;
+
+        /** @type {?GLib.Source} */
+        this._filepathToFixDelaySource = null;
 
         // Reference from Main UI
         this._screenshotUI = Main.screenshotUI;
@@ -132,6 +139,11 @@ export default class ScreencastExtraFeature extends Extension {
         this._setupPipelineConfigure().catch((e) => {
             console.warn(`Setup pipeline configure failed: ${e}`);
         });
+
+        this._screenshotUINotifyScreenCastInProgress =
+            this._screenshotUI.connect(
+                "notify::screencast-in-progress",
+                this.onScreenshotUINotifyScreenCastInProgress.bind(this));
 
         this._settingsChangedPipelineConfigures = this._settings.connect("changed::pipeline-configures", () => {
             this._pipelineConfigures = null;
@@ -180,12 +192,24 @@ export default class ScreencastExtraFeature extends Extension {
             this._partAdjust = null;
         }
 
+        if (this._screenshotUI) {
+            if (this._screenshotUINotifyScreenCastInProgress) {
+                this._screenshotUI.disconnect(this._screenshotUINotifyScreenCastInProgress);
+            }
+        }
         this._screenshotUI = null;
 
         // Internal variables
         if (this._settings && this._settingsChangedPipelineConfigures) {
             this._settings.disconnect(this._settingsChangedPipelineConfigures);
         }
+
+        if (this._filepathToFixDelaySource) {
+            clearTimeout(this._filepathToFixDelaySource);
+            this._filepathToFixDelaySource = null;
+        }
+
+        this._filepathToFix = null;
 
         this._pipelineConfigures = null;
 
@@ -256,12 +280,22 @@ export default class ScreencastExtraFeature extends Extension {
             options['pipeline'] = new GLib.Variant('s', pipeline);
 
             try {
-                var [success, filepath] = await body(options);
+                const [success, filepath] = await body(options);
                 if (success) {
                     this._partIndicator.onPipelineSetupDone();
-                    filepath = fixFilePath(filepath, configure.extension);
+                    const newFilepath = getCorrectFilePath(filepath, configure.extension);
+
+                    if (filepath != newFilepath) {
+                        GLib.rename(filepath, newFilepath);
+
+                        // Remember file name to fix, to defer some correction
+                        // after screen cast.
+                        this._filepathToFix = [filepath, newFilepath];
+                    }
+                    return [success, newFilepath]
+                } else {
+                    return [success, filepath];
                 }
-                return [success, filepath];
             } catch (e) {
                 this._pipelineConfigureIndex++;
             }
@@ -269,6 +303,28 @@ export default class ScreencastExtraFeature extends Extension {
 
         // If it reached here, all of pipeline configures are failed.
         throw Error("Tried all configure and failed!");
+    }
+
+    onScreenshotUINotifyScreenCastInProgress() {
+        const toFixPathAfter =
+            !this._screenshotUI.screencast_in_progress &&
+            (this._filepathToFix != null);
+        if (toFixPathAfter) {
+            const [filepath, newFilepath] = this._filepathToFix;
+            this._filepathToFix = null;
+
+            if (this._filepathToFixDelaySource) {
+                clearTimeout(this._filepathToFixDelaySource);
+            }
+            this._filepathToFixDelaySource = setTimeout(
+                () => {
+                    clearTimeout(this._filepathToFixDelaySource);
+                    this._filepathToFixDelaySource = null;
+                    fixFilePathRecentList(filepath, newFilepath);
+                },
+                1000
+            );
+        }
     }
 
     /**
