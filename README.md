@@ -45,18 +45,30 @@ This extension adds additonal UI on built-in screenshot UI.
     ![Screen Shot Options UI](docs/screenshot_05.png)
 
     - Framerate: Framerate for screen cast. (How many pictures per seconds)
-      Supported up to 60 Hz.
+      Has options up to 60 Hz.
 
     - Downsize: Downsize screen cast resolution. (Lesser pixels for video)
-      Supported to 33%. 
+      Has options down to 33%. 
 
     - Screencast extra feature preferences: Open Preferences window.
 
 ### Preferences
 
+#### General Options
+
+![Screen Shot Preferences General](docs/screenshot_pref_02.png)
+
+General options about the extension.
+
+It is hard to input number in extension. So you can put what you need in here.
+Double click to set initially selected items.
+
+- Framerate (Supported up to 60 Hz)
+- Downsize Ratio
+
 #### Pipeline Options
 
-![Screen Shot Preferences Pipeline](docs/screenshot_pref_00.png)
+![Screen Shot Preferences Pipeline](docs/screenshot_pref_03.png)
 
 Can control pipeline options to determine how to encode video and audio into
 file.
@@ -65,7 +77,7 @@ file.
 - Add new pipeline configure.
 - Reset all pipeline configure as default.
 
-![Screen Shot Preferences Pipeline Each](docs/screenshot_pref_01.png)
+![Screen Shot Preferences Pipeline Each](docs/screenshot_pref_04.png)
 
 Clicking on pipeline configure, or add button, would show this.
 
