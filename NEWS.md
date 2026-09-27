@@ -1,3 +1,12 @@
+## 0.5
+
+Feature Release
+
+- Fix: Fixes file name in recents list also.
+- Fix: Minor bug that Out of bound access when all pipeline configure failed.
+- Feature: Make framerate and downsize ratio editable through preferences.
+- Misc: Include 51 in supported gnome shell version.
+
 ## 0.4.3
 
 Minor update Release
